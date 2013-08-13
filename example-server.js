@@ -7,94 +7,75 @@ var db = require('./db-rethinkdb');
 
 var fospServer = new Server(options);
 
-var log = function(text) {
-  console.log("++ " + text);
-}
-
 fospServer.on('connection', function(con) {
-  var conId = Math.floor(Math.random() * 10001);
-  log('Recieved a new connection: ' + conId);
-	con.on('message', function(msg) {
-		log(conId + ' Recieved new message: ' + JSON.stringify(msg));
-    log(msg.uri.toString());
-	});
+  log('Recieved a new connection: ' + con.id);
 });
 
-fospServer.on('request', function(con, msg) {
-  switch(msg.request) {
-    case 'CONNECT':
-      if (msg.body.version === "0.1")
-        con.sendSucceded(100, msg.seq);
-      else
-        con.sendFailed(400, msg.seq);
-      break;
-    case 'AUTHENTICATE':
-      db.authenticateUser(msg.body.name, msg.body.password, function(failed) {
-        if (failed)
-          con.sendFailed(402, msg.seq);
-        else
-          con.sendSucceded(210, msg.seq);
-      });
-      break;
-    case 'REGISTER':
-      db.addUser(msg.body.name, msg.body.password, function(failed) {
-        if (failed)
-          con.sendFailed(500, msg.seq);
-        else
-          con.sendSucceded(200, msg.seq);
-      });
-      break;
-    case 'SELECT':
-      db.getNode(msg.uri.toString(), function(err, result) {
-        log("Result " + result);
-        if (err)
-          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: "Failed to retrieve data\n" + err});
-        else if (result === null)
-          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 404, body: "Not found" });
-        else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: result});
-      });
-      break;
-    case 'CREATE':
-      db.setNode(msg.uri.toString(), msg.body, function(err, result) {
-        if (err)
-          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: err});
-        else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 201, body: null});
-      });
-      break;
-    case 'UPDATE':
-      db.updateNode(msg.uri.toString(), msg.body, function(err, result) {
-        if (err)
-          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: err});
-        else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: null});
-      });
-      break;
-    case 'DELETE':
-      db.deleteNode(msg.uri.toString(), function(err) {
-        if (err)
-          con.sendMessage({type: fosp.RESPONSE, response: 'FAILED', seq: msg.seq, status: 500, body: null});
-        else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: null});
-      });
-      break;
-    case 'LIST':
-      db.listChildren(msg.uri.toString(), function(err, children) {
-        if (err)
-          con.sendMessage({type: fosp.RESPONSE, response: 'FAILED', seq: msg.seq, status: 500, body: null});
-        else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: children});
-      });
-      break;
-    default:
-      con.sendMessage({
-        type: fosp.RESPONSE,
-        response: "FAILED",
-        status: 500,
-        seq: msg.seq,
-        body: "VERB not known"
-      });
-      break;
-  }
+fospServer.on('connect', function(con, msg) {
+  if (msg.body.version === "0.1")
+    con.sendSucceded(100, msg.seq);
+  else
+    con.sendFailed(400, msg.seq);
 });
+fospServer.on('authenticate', function(con, msg) {
+  db.authenticateUser(msg.body.name, msg.body.password, function(failed) {
+    if (failed)
+      con.sendFailed(402, msg.seq);
+    else
+      con.sendSucceded(210, msg.seq);
+  });
+});
+fospServer.on('register', function(con, msg) {
+  db.addUser(msg.body.name, msg.body.password, function(failed) {
+    if (failed)
+      con.sendFailed(500, msg.seq);
+    else
+      con.sendSucceded(200, msg.seq);
+  });
+});
+fospServer.on('select', function(con, msg) {
+  db.getNode(msg.uri.toString(), function(err, result) {
+    if (err)
+      con.sendFailed(500, msg.seq, {}, "Failed to retrieve data\n" + err);
+    else if (result === null)
+      con.sendFailed(404, msg.seq, {}, "Not found");
+    else
+      con.sendSucceded(200, msg.seq, {}, result);
+  });
+});
+fospServer.on('create', function(con, msg) {
+  db.setNode(msg.uri.toString(), msg.body, function(err, result) {
+    if (err)
+      con.sendFailed(500, msg.seq, {}, err);
+    else
+      con.sendSucceded(201, msg.seq);
+  });
+});
+fospServer.on('update', function(con, msg) {
+  db.updateNode(msg.uri.toString(), msg.body, function(err, result) {
+    if (err)
+      con.sendFailed(500, msg.seq, {}, err);
+    else
+      con.sendSucceded(200, msg.seq);
+  });
+});
+fospServer.on('delete', function(con, msg) {
+  db.deleteNode(msg.uri.toString(), function(err) {
+    if (err)
+      con.sendFailed(500, msg.seq);
+    else
+      con.sendSucceded(200, msg.seq);
+  });
+});
+fospServer.on('list', function(con, msg) {
+  db.listChildren(msg.uri.toString(), function(err, children) {
+    if (err)
+      con.sendFailed(500, msg.seq);
+    else
+      con.sendSucceded(200, msg.seq, {}, children);
+  });
+});
+
+var log = function(text) {
+  console.log("example-server: " + text);
+}

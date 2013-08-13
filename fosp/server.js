@@ -13,30 +13,14 @@ var Server = function(options) {
     var con = new Connection(ws);
     self.emit('connection', con);
 
-    var eventIdentifiers = ['message', 'request', 'response', 'notification',
-      'select', 'create', 'update', 'delete', 'list',
+    var eventIds = ['message', 'request', 'response', 'notification',
+      'connect', 'authenticate', 'register', 'select', 'create', 'update', 'delete', 'list',
       'succeded', 'failed',
       'created', 'updated', 'deleted'
-    ]
-    /*
-    for (eventId in eventIdentifiers) {
+    ].forEach(function(eventId) {
       con.on(eventId, function(msg) {
-        log('Recieved event: ' + eventId);
         self.emit(eventId, con, msg);
       });
-    }
-    */
-    con.on('message', function(msg) {
-      self.emit('message', con, msg);
-    });
-    con.on('request', function(msg) {
-      self.emit('request', con, msg);
-    });
-    con.on('response', function(msg) {
-      self.emit('response', con, msg);
-    });
-    con.on('notification', function(msg) {
-      self.emit('notification', con, msg);
     });
   });
 };

@@ -70,6 +70,12 @@ fospClient.on('open', function() {
         else
           _delete('.');
         break;
+      case 'list':
+        if (argv[0])
+          list(argv[0]);
+        else
+          list('.');
+        break;
       default:
         console.log('Unknown command');
         break;
@@ -177,6 +183,20 @@ var _delete = function(name) {
   fospClient.sendMessage({
     type: fosp.REQUEST,
     request: 'DELETE',
+    seq: seq,
+    uri: cwd,
+  });
+  seq++;
+  cwd = oldCwd;
+  waitForResponse = true;
+}
+
+var list = function(name) {
+  var oldCwd = cwd;
+  cd(name);
+  fospClient.sendMessage({
+    type: fosp.REQUEST,
+    request: 'LIST',
     seq: seq,
     uri: cwd,
   });

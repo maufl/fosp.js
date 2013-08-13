@@ -26,8 +26,7 @@ var testNode = function(path, callback) {
 
 var _getNode = function(path, callback) {
   var uri = new fosp.URI(path);
-  var path = uri.path;
-  r.db('fosp').table(uri.user.name).filter(r.row('path').eq(path)).run(connection, function(err, cursor) {
+  r.db('fosp').table(uri.user.name).filter(r.row('path').eq(uri.path)).run(connection, function(err, cursor) {
     if (err)
       callback(err, null);
     else
@@ -99,6 +98,32 @@ var deleteNode = function(path, callback) {
   db.table(uri.user.name).filter(r.row('path').match('^'+uri.path)).delete().run(connection, callback);
 }
 
+var listChildren = function(path, callback) {
+  var uri = new fosp.URI(path)
+  path = uri.path
+  if (path === '/')
+    path = ''
+  db.table(uri.user.name).filter(r.row('path').match('^'+path+'/[^/]+$')).run(connection, function(err, cursor) {
+    if (err)
+      callback(err, null)
+    else
+      cursor.toArray(function(err, result) {
+        if (err) {
+          callback(err, null);
+        } else {
+          var children = []
+          for (var i=0; i< result.length; i++) {
+            var pA = result[i].path.split('/');
+            children.push(pA[pA.length - 1]);
+          }
+          log(children)
+          callback(null, children)
+        }
+      });
+  });
+}
+
+
 var getAllNodes = function(path, callback) {
   var uri = new fosp.URI(path);
   var path = uri.path;
@@ -112,5 +137,6 @@ module.exports = {
   setNode: setNode,
   updateNode: updateNode,
   deleteNode: deleteNode,
+  listChildren: listChildren,
   getAllNodes: getAllNodes
 }

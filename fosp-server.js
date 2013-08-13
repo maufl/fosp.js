@@ -56,6 +56,14 @@ fospServer.on('request', function(con, msg) {
           con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: null});
       });
       break;
+    case 'LIST':
+      db.listChildren(msg.uri.toString(), function(err, children) {
+        if (err)
+          con.sendMessage({type: fosp.RESPONSE, response: 'FAILED', seq: msg.seq, status: 500, body: null});
+        else
+          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: children});
+      });
+      break;
     default:
       con.sendMessage({
         type: fosp.RESPONSE,

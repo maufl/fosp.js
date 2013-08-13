@@ -1,6 +1,8 @@
 // This object type models a fosp connection
 var events = require('events')
+var extend = require('extend')
 var fosp = require('../fosp')
+var helpers = require('./connection-helpers')
 
 var Connection = function(ws) {
   var self = this;
@@ -93,66 +95,7 @@ Connection.prototype.sendMessage = function(msg) {
   }
 }
 
-// Convinience for sending requests
-Connection.prototype.sendRequest = function(request, uri, seq, headers, body) {
-  if (typeof headers === 'undefined')
-    headers = {}
-  if (typeof body === 'undefined')
-    body = null
-  var msg = { type: fosp.REQUEST, request: request, uri: uri, seq: seq, headers: headers, body: body };
-  this.sendMessage(msg);
-}
-Connection.prototype.sendConnect = function(seq, headers, body) {
-  this.sendRequest('CONNECT', '*', seq, headers, body)
-}
-Connection.prototype.sendAuthenticate = function(seq, headers, body) {
-  this.sendRequest('AUTHENTICATE', '*', seq, headers, body)
-}
-Connection.prototype.sendRegister = function(seq, headers, body) {
-  this.sendRequest('REGISTER', '*', seq, headers, body)
-}
-Connection.prototype.sendSelect = function(uri, seq, headers, body) {
-  this.sendRequest('SELECT', uri, seq, headers, body)
-}
-Connection.prototype.sendCreate = function(uri, seq, headers, body) {
-  this.sendRequest('CREATE', uri, seq, headers, body)
-}
-Connection.prototype.sendUpdate = function(uri, seq, headers, body) {
-  this.sendRequest('UPDATE', uri, seq, headers, body)
-}
-Connection.prototype.sendDelete = function(uri, seq, headers, body) {
-  this.sendRequest('DELETE', uri, seq, headers, body)
-}
-Connection.prototype.sendList = function(uri, seq, headers, body) {
-  this.sendRequest('LIST', uri, seq, headers, body)
-}
-
-// Convinience for responses
-Connection.prototype.sendResponse = function(response, status, seq, headers, body) {
-  if (typeof headers === 'undefined')
-    headers = {}
-  if (typeof body === 'undefined')
-    body = null
-  var msg = { type: fosp.RESPONSE, response: response, status: status, seq: seq, headers: headers, body: body };
-  this.sendMessage(msg);
-}
-Connection.prototype.sendSucceded = function(status, seq, headers, body) {
-  this.sendResponse('SUCCEDED', status, seq, headers, body)
-}
-Connection.prototype.sendFailed = function(status, seq, headers, body) {
-  this.sendResponse('FAILED', status, seq, headers, body)
-}
-
-// Convinience for notifications, not really need atm
-Connection.prototype.sendNotification = function(event, uri, seq, headers, body) {
-  if (typeof headers === 'undefined')
-    headers = {}
-  if (typeof body === 'undefined')
-    body = null
-  var msg = { type: fosp.NOTIFICATION, event: event, uri: uri, seq: seq, headers: headers, body: body };
-  this.sendMessage(msg);
-}
-// TODO
+extend(Connection.prototype, helpers);
 
 var log = function(text) {
   console.log('fosp/connection: ' + text)

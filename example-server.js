@@ -22,6 +22,28 @@ fospServer.on('connection', function(con) {
 
 fospServer.on('request', function(con, msg) {
   switch(msg.request) {
+    case 'CONNECT':
+      if (msg.body.version === "0.1")
+        con.sendSucceded(100, msg.seq);
+      else
+        con.sendFailed(400, msg.seq);
+      break;
+    case 'AUTHENTICATE':
+      db.authenticateUser(msg.body.name, msg.body.password, function(failed) {
+        if (failed)
+          con.sendFailed(402, msg.seq);
+        else
+          con.sendSucceded(210, msg.seq);
+      });
+      break;
+    case 'REGISTER':
+      db.addUser(msg.body.name, msg.body.password, function(failed) {
+        if (failed)
+          con.sendFailed(500, msg.seq);
+        else
+          con.sendSucceded(200, msg.seq);
+      });
+      break;
     case 'SELECT':
       db.getNode(msg.uri.toString(), function(err, result) {
         log("Result " + result);

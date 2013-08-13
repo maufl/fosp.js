@@ -37,6 +37,12 @@ client.on('open', function() {
       case 'exit':
         process.exit(0);
         break;
+      case 'register':
+        register(argv);
+        break;
+      case 'authenticate':
+        authenticate(argv);
+        break;
       case 'select':
         if (argv[0])
           select(argv[0]);
@@ -137,6 +143,16 @@ var cd = function(arg) {
     }
   }
 };
+
+var register = function(argv) {
+  client.con.sendRegister(seq, {}, { name: argv[0], password: argv[1] });
+  seq++;
+}
+
+var authenticate = function(argv) {
+  client.con.sendAuthenticate(seq, {}, { name: argv[0], password: argv[1] });
+  seq++;
+}
 
 var select = function(arg) {
   var oldCwd = cwd;

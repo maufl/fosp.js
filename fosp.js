@@ -1,5 +1,5 @@
 // Bidirectional Json Storage Protocol
-var REQUESTS = ["CONNECT", "AUTHENTICATE", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];
+var REQUESTS = ["CONNECT", "AUTHENTICATE", "REGISTER", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];
 var RESPONSES = ["SUCCEDED", "FAILED"];
 var EVENTS = ["CREATED", "UPDATED", "DELETED"];
 var REQUEST = 1;
@@ -7,25 +7,25 @@ var RESPONSE = 2;
 var NOTIFICATION = 3;
 
 var URI = function(string) {
-	var self = this;
+  var self = this;
   var i = string.indexOf("/");
   if (i === -1)
     i = string.length;
-	self.user = string.substr(0, i);
-	self.path = string.substr(i, string.length);
+  self.user = string.substr(0, i);
+  self.path = string.substr(i, string.length);
   if (self.path === '')
     self.path = '/';
 
-	if (! self.user.match(/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9_\-.]+$/)) {
-    console.log('Invalid user: ' + self.user);
-		throw new Error("Invalid user");
-	}
-	i = self.user.indexOf("@");
-	self.user = { name: self.user.substr(0, i), domain: self.user.substr(i + 1, self.user.length) };
+  if (! self.user.match(/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9_\-.]+$/)) {
+    log('Invalid user: ' + self.user);
+    throw new Error("Invalid user");
+  }
+  i = self.user.indexOf("@");
+  self.user = { name: self.user.substr(0, i), domain: self.user.substr(i + 1, self.user.length) };
 };
 
 URI.prototype.toString = function() {
-	return this.user.name + "@" + this.user.domain + this.path;
+  return this.user.name + "@" + this.user.domain + this.path;
 }
 URI.prototype.fqUser = function() {
   return this.user.name + "@" + this.user.domain;
@@ -36,7 +36,7 @@ URI.prototype.fqUser = function() {
  *            HEADERS\r\n
  *            \r\n
  *            BODY
- * REQUEST_TYPE := CONNECT || AUTHENTICATE || CREATE || UPDATE || DELETE || SELECT
+ * REQUEST_TYPE := CONNECT || AUTHENTICATE || REGISTER || CREATE || UPDATE || DELETE || SELECT
  *
  * RESPONSE := RESPONSE_TYPE + " " + RESONSE_STATUS + " " SEQUENCE_NUMBER\r\n
  *             HEADERS\r\n
@@ -68,31 +68,36 @@ URI.prototype.fqUser = function() {
 var parseMessage = function(raw) {
   log('Parsing message');
   log(raw);
-	var message = {type: null, seq: null, request: null, response: null, event: null, uri: null, status: null, headers: {}, body: null};
-	var lines = raw.split("\r\n");
-	var main_line = lines.shift();
-	var main = main_line.split(" ");
+  var message = {type: null, seq: null, request: null, response: null, event: null, uri: null, status: null, headers: {}, body: null};
+  var lines = raw.split("\r\n");
+  var main_line = lines.shift();
+  var main = main_line.split(" ");
 
   // Identify the typ of the message
   var identifier = main[0];
   log('Identifier is ' + identifier);
-	if (REQUESTS.indexOf(identifier) >= 0) {
+  if (REQUESTS.indexOf(identifier) >= 0) {
     message.type = REQUEST;
-		message.request = identifier;
-	} else if (RESPONSES.indexOf(identifier) >= 0) {
+    message.request = identifier;
+  } else if (RESPONSES.indexOf(identifier) >= 0) {
     message.type = RESPONSE;
     message.response = identifier;
   } else if (EVENTS.indexOf(identifier) >= 0) {
     message.type = NOTIFICATION;
     message.event = identifier;
   } else {
-		throw new Error("Type of message unknown: " + identifier);
-	}
+    throw new Error("Type of message unknown: " + identifier);
+  }
 
   // Read the URI
-	if ((message.type == REQUEST || message.type == NOTIFICATION) && main.length >= 2) {
-		message.uri = new URI(main[1]);
-	}
+  if ((message.type == REQUEST || message.type == NOTIFICATION) && main.length >= 2) {
+    if (message.type == REQUEST && ['CONNECT', 'REGISTER', 'AUTHENTICATE'].indexOf(message.request) < 0) {
+      message.uri = new URI(main[1]);
+    }
+    else {
+      message.uri = main[1];
+    }
+  }
 
   // Read the status code
   if (message.type == RESPONSE && main.length >= 2) {
@@ -108,30 +113,30 @@ var parseMessage = function(raw) {
   }
 
   // Read headers
-	var tmp = lines.shift();
-	while (typeof(tmp) === "string" && tmp != "") {
-		var header = tmp.split(": ");
-		if (header.length === 2) {
-			message.headers[header[0]] = header[1];
-		}
-		else {
-			throw new Error("Bad header format");
-		}
-		tmp = lines.shift();
-	}
+  var tmp = lines.shift();
+  while (typeof(tmp) === "string" && tmp != "") {
+    var header = tmp.split(": ");
+    if (header.length === 2) {
+      message.headers[header[0]] = header[1];
+    }
+    else {
+      throw new Error("Bad header format");
+    }
+    tmp = lines.shift();
+  }
 
   // Read body
-	if (lines instanceof Array && lines.length > 0) {
-		var body = lines.join("\n");
-		try {
-			message.body = JSON.parse(body);
-		}
-		catch(e) {
+  if (lines instanceof Array && lines.length > 0) {
+    var body = lines.join("\n");
+    try {
+      message.body = JSON.parse(body);
+    }
+    catch(e) {
       message.body = body;
-		}
-	}
+    }
+  }
 
-	return message;
+  return message;
 };
 
 var serializeMessage = function(msg) {
@@ -170,10 +175,10 @@ var serializeMessage = function(msg) {
   if (typeof(msg.headers) === 'undefined') {
     msg.headers = {};
   }
-	if (typeof(msg.headers) !== 'object') {
-		throw new Error("Invalid headers object");
-	}
-	var raw = "";
+  if (typeof(msg.headers) !== 'object') {
+    throw new Error("Invalid headers object");
+  }
+  var raw = "";
   if (msg.type === REQUEST) {
     raw += [msg.request, msg.uri, msg.seq].join(" ");
   }
@@ -186,20 +191,20 @@ var serializeMessage = function(msg) {
   else {
     throw new Error("Unknown type of message");
   }
-	raw += "\r\n";
-	for (k in msg.headers) {
-		raw += k + ": " + msg.headers[k] + "\r\n";
-	}
+  raw += "\r\n";
+  for (k in msg.headers) {
+    raw += k + ": " + msg.headers[k] + "\r\n";
+  }
   log("Msg Body type " + typeof(msg.body));
-	if (typeof(msg.body) === 'object' && msg.body !== null) {
-		raw += "\r\n";
-		raw += JSON.stringify(msg.body);
-	}
+  if (typeof(msg.body) === 'object' && msg.body !== null) {
+    raw += "\r\n";
+    raw += JSON.stringify(msg.body);
+  }
   else if (typeof(msg.body) !== 'undefined') {
     raw += "\r\n";
     raw += msg.body;
   }
-	return raw;
+  return raw;
 };
 
 var log = function(text) {
@@ -207,13 +212,13 @@ var log = function(text) {
 }
 
 module.exports = {
-	//REQUESTS: REQUESTS,
+  //REQUESTS: REQUESTS,
   //RESPONSES: RESPONSES,
-	//EVENTS: EVENTS,
+  //EVENTS: EVENTS,
   REQUEST: REQUEST,
   RESPONSE: RESPONSE,
   NOTIFICATION: NOTIFICATION,
   URI: URI,
-	parseMessage: parseMessage,
-	serializeMessage: serializeMessage,
+  parseMessage: parseMessage,
+  serializeMessage: serializeMessage,
 };

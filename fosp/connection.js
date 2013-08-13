@@ -31,6 +31,15 @@ var Connection = function(ws) {
 
   self.on('request', function(msg) {
     switch(msg.request) {
+      case 'CONNECT':
+        self.emit('connect', msg);
+        break;
+      case 'REGISTER':
+        self.emit('register', msg);
+        break;
+      case 'AUTHENTICATE':
+        self.emit('authenticate', msg);
+        break;
       case 'SELECT':
         self.emit('select', msg);
         break;
@@ -92,6 +101,15 @@ Connection.prototype.sendRequest = function(request, uri, seq, headers, body) {
     body = null
   var msg = { type: fosp.REQUEST, request: request, uri: uri, seq: seq, headers: headers, body: body };
   this.sendMessage(msg);
+}
+Connection.prototype.sendConnect = function(seq, headers, body) {
+  this.sendRequest('CONNECT', '*', seq, headers, body)
+}
+Connection.prototype.sendAuthenticate = function(seq, headers, body) {
+  this.sendRequest('AUTHENTICATE', '*', seq, headers, body)
+}
+Connection.prototype.sendRegister = function(seq, headers, body) {
+  this.sendRequest('REGISTER', '*', seq, headers, body)
 }
 Connection.prototype.sendSelect = function(uri, seq, headers, body) {
   this.sendRequest('SELECT', uri, seq, headers, body)

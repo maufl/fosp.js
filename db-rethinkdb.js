@@ -4,6 +4,8 @@ var extend = require('extend');
 var fosp = require('./fosp');
 var connection = null;
 var db = r.db('fosp');
+var user_db = r.db('fosp_user');
+var user_table = user_db.table('users');
 
 var log = function(text) {
   console.log("db: " + text);
@@ -131,11 +133,54 @@ var getAllNodes = function(path, callback) {
   r.db('fosp').table(uri.user.name).filter(function(node) { return r.expr('^'+path).match(node('path')); }).run(connection, callback);
 }
 
+var isUser = function(name, callback) {
+  user_table.filter({name: name}).count().run(connection, function(err, num) {
+    if (err || num < 1)
+      callback(false)
+    else
+      callback(true)
+  });
+}
+
+var addUser = function(name, password, callback) {
+  isUser(name, function(exists) {
+    if (!exists)
+      user_table.insert({name: name, password: password}).run(connection, function(err, result) {
+        callback(err)
+      });
+    else
+      callback("User already exists")
+  });
+}
+
+var authenticateUser = function(name, password, callback) {
+  user_table.filter({name: name}).run(connection, function(err, cursor) {
+    if (err) {
+      callback(err);
+      return;
+    }
+    cursor.toArray(function(err, users) {
+      if (err) {
+        callback(err);
+        return;
+      }
+      if (users.length === 1 && users[0].password === password) {
+        callback(null);
+      }
+      else {
+        callback("Failed to authenticate");
+      }
+    });
+  });
+}
+
 module.exports = {
   getNode: getNode,
   setNode: setNode,
   updateNode: updateNode,
   deleteNode: deleteNode,
   listChildren: listChildren,
-  getAllNodes: getAllNodes
+  getAllNodes: getAllNodes,
+  addUser: addUser,
+  authenticateUser: authenticateUser
 }

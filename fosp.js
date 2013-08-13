@@ -2,7 +2,7 @@
 var WebSocket = require('ws');
 var events = require('events');
 
-var REQUESTS = ["CONNECT", "AUTHENTICATE", "CREATE", "UPDATE", "DELETE", "SELECT"];
+var REQUESTS = ["CONNECT", "AUTHENTICATE", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];
 var RESPONSES = ["SUCCEDED", "FAILED"];
 var EVENTS = ["CREATED", "UPDATED", "DELETED"];
 var REQUEST = 1;
@@ -20,8 +20,11 @@ var URI = function(string) {
     i = string.length;
 	self.user = string.substr(0, i);
 	self.path = string.substr(i, string.length);
+  if (self.path === '')
+    self.path = '/';
 
 	if (! self.user.match(/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9_\-.]+$/)) {
+    console.log('Invalid user: ' + self.user);
 		throw new Error("Invalid user");
 	}
 	i = self.user.indexOf("@");
@@ -227,7 +230,7 @@ var Connection = function(ws) {
       }
 		}
 		catch(e) {
-			log("212: " + e);
+			log("230: " + e);
 		}
 	});
 

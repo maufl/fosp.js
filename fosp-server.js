@@ -26,8 +26,34 @@ fospServer.on('request', function(con, msg) {
         log("Result " + result);
         if (err)
           con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: "Failed to retrieve data\n" + err});
+        else if (result === null)
+          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 404, body: "Not found" });
         else
-          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: result.content});
+          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: result});
+      });
+      break;
+    case 'CREATE':
+      db.setNode(msg.uri.toString(), msg.body, function(err, result) {
+        if (err)
+          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: err});
+        else
+          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 201, body: null});
+      });
+      break;
+    case 'UPDATE':
+      db.updateNode(msg.uri.toString(), msg.body, function(err, result) {
+        if (err)
+          con.sendMessage({type: fosp.RESPONSE, response: "FAILED", seq: msg.seq, status: 500, body: err});
+        else
+          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: null});
+      });
+      break;
+    case 'DELETE':
+      db.deleteNode(msg.uri.toString(), function(err) {
+        if (err)
+          con.sendMessage({type: fosp.RESPONSE, response: 'FAILED', seq: msg.seq, status: 500, body: null});
+        else
+          con.sendMessage({type: fosp.RESPONSE, response: "SUCCEDED", seq: msg.seq, status: 200, body: null});
       });
       break;
     default:

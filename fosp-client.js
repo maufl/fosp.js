@@ -19,10 +19,11 @@ fospClient.on('open', function() {
   rl.prompt();
   rl.on('line', function(line) {
     var argv = line.split(' ');
-    switch(argv[0]) {
+    var command = argv.shift();
+    switch(command) {
       case 'cd':
-        if (argv[1]) {
-          cd(argv[1]);
+        if (argv[0]) {
+          cd(argv[0]);
           rl.setPrompt('fosp:' + cwd + '>');
         }
         else {
@@ -36,10 +37,38 @@ fospClient.on('open', function() {
         process.exit(0);
         break;
       case 'select':
-        if (argv[1])
-          select(argv[1]);
+        if (argv[0])
+          select(argv[0]);
         else
           select('.');
+        break;
+      case 'create':
+        if (argv.length < 2) {
+          console.log('To few arguments for create');
+          break;
+        }
+        else {
+          var name = argv.shift();
+          var body = JSON.parse(argv.join(" "));
+          create(name, body);
+        }
+        break;
+      case 'update':
+        if (argv.length < 2) {
+          console.log('To few arguments for create');
+          break;
+        }
+        else {
+          var name = argv.shift();
+          var body = JSON.parse(argv.join(" "));
+          update(name, body);
+        }
+        break;
+      case 'delete':
+        if (argv[0])
+          _delete(argv[0]);
+        else
+          _delete('.');
         break;
       default:
         console.log('Unknown command');
@@ -51,10 +80,12 @@ fospClient.on('open', function() {
 });
 
 fospClient.on('error', function(msg) {
+  console.log();
   console.error(msg);
   process.exit(1);
 });
 fospClient.on('close', function() {
+  console.log();
   console.log('Connection closed');
   process.exit(1);
 });
@@ -113,3 +144,43 @@ var select = function(arg) {
   cwd = oldCwd;
   waitForResponse = true;
 };
+
+var create = function(name, body) {
+  var path = cwd + "/" + name;
+  fospClient.sendMessage({
+    type: fosp.REQUEST,
+    request: 'CREATE',
+    seq: seq,
+    uri: path,
+    body: body
+  });
+  seq++;
+}
+
+var update = function(name, body) {
+  var path = cwd;
+  if (name !== '.')
+    path += '/' + name;
+  fospClient.sendMessage({
+    type: fosp.REQUEST,
+    request: 'UPDATE',
+    seq: seq,
+    uri: path,
+    body: body
+  });
+  seq++;
+}
+
+var _delete = function(name) {
+  var oldCwd = cwd;
+  cd(name);
+  fospClient.sendMessage({
+    type: fosp.REQUEST,
+    request: 'DELETE',
+    seq: seq,
+    uri: cwd,
+  });
+  seq++;
+  cwd = oldCwd;
+  waitForResponse = true;
+}

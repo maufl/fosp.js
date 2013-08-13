@@ -1,7 +1,6 @@
 var fosp = require('./fosp');
 var Client = require('./fosp/client');
 var readline = require('readline');
-var options = { port: 1337, domain: 'example.com' };
 
 var rl = readline.createInterface({
     input: process.stdin,
@@ -9,14 +8,18 @@ var rl = readline.createInterface({
 });
 
 console.log('Starting client');
-var client = new Client(options);
-var cwd = 'test@example.net';
+var client = new Client();
+var cwd = 'X';
 var seq = 1;
 var waitForResponse = false;
+var user = '';
 
 client.on('open', function() {
   console.log('Established connection');
-  rl.setPrompt('fosp:'+cwd+'>');
+  console.log('Negotiating version');
+  client.con.sendConnect(seq, {}, {version: "0.1"});
+  setPrompt();
+  seq++;
   rl.prompt();
   rl.on('line', function(line) {
     var argv = line.split(' ');
@@ -25,7 +28,7 @@ client.on('open', function() {
       case 'cd':
         if (argv[0]) {
           cd(argv[0]);
-          rl.setPrompt('fosp:' + cwd + '>');
+          setPrompt();
         }
         else {
           console.log('Missing argument for cd');
@@ -109,6 +112,10 @@ client.on('message', function(msg) {
   rl.prompt();
 });
 
+var setPrompt = function() {
+  rl.setPrompt(user +'@localhost on ' + cwd + '>');
+}
+
 
 var cd = function(arg) {
   var dirs = arg.split('/');
@@ -152,6 +159,9 @@ var register = function(argv) {
 var authenticate = function(argv) {
   client.con.sendAuthenticate(seq, {}, { name: argv[0], password: argv[1] });
   seq++;
+  user = argv[0];
+  if (cwd === 'X')
+    cd(argv[0] + '@localhost')
 }
 
 var select = function(arg) {

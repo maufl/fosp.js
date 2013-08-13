@@ -3,11 +3,13 @@ var events = require('events')
 var extend = require('extend')
 var fosp = require('../fosp')
 var helpers = require('./connection-helpers')
+var Context = require('./connection-context')
 
 var Connection = function(ws) {
   var self = this;
   self.ws = ws;
   self.id = Math.floor(Math.random() * 10001);
+  self.ctx = new Context();
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
@@ -20,15 +22,29 @@ var Connection = function(ws) {
     }
   });
 
+  self.ws.on('open', function() {
+    self.emit('open');
+  });
+
+  self.ws.on('close', function() {
+    self.emit('close');
+  });
+
   self.on('message', function(msg) {
-    if (msg.type === fosp.REQUEST)
-      self.emit('request', msg);
-    else if (msg.type === fosp.RESPONSE)
-      self.emit('response', msg);
-    else if (msg.type === fosp.NOTIFICATION)
-      self.emit('notification', msg);
-    else
-      log('Recieved unknow type of message: ' + msg.type)
+    switch(msg.type) {
+      case fosp.REQUEST:
+        self.emit('request', msg);
+        break;
+      case fosp.RESPONSE:
+        self.emit('response', msg);
+        break;
+      case fosp.NOTIFICATION:
+        self.emit('notification', msg);
+        break;
+      default:
+        log('Recieved unknow type of message: ' + msg.type)
+        break;
+    }
   });
 
   self.on('request', function(msg) {
@@ -93,6 +109,10 @@ Connection.prototype.sendMessage = function(msg) {
   catch(e) {
     log(e);
   }
+}
+
+Connection.prototype.close = function() {
+  this.ws.close();
 }
 
 extend(Connection.prototype, helpers);

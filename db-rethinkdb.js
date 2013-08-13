@@ -144,12 +144,25 @@ var isUser = function(name, callback) {
 
 var addUser = function(name, password, callback) {
   isUser(name, function(exists) {
-    if (!exists)
-      user_table.insert({name: name, password: password}).run(connection, function(err, result) {
-        callback(err)
-      });
-    else
+    if (exists) {
       callback("User already exists")
+      return;
+    }
+    db.tableCreate(name).run(connection, function(err, object) {
+      if (err) {
+        callback(err);
+        return;
+      }
+      db.table(name).insert({path: '/', content: 'Welcome home'}).run(connection, function(err, result) {
+        if (err) {
+          callback(err);
+          return;
+        }
+        user_table.insert({name: name, password: password}).run(connection, function(err, result) {
+          callback(err)
+        });
+      });
+    });
   });
 }
 

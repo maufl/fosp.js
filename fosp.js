@@ -1,17 +1,10 @@
 // Bidirectional Json Storage Protocol
-var WebSocket = require('ws');
-var events = require('events');
-
 var REQUESTS = ["CONNECT", "AUTHENTICATE", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];
 var RESPONSES = ["SUCCEDED", "FAILED"];
 var EVENTS = ["CREATED", "UPDATED", "DELETED"];
 var REQUEST = 1;
 var RESPONSE = 2;
 var NOTIFICATION = 3;
-
-var log = function(text) {
-  console.log("__ " + text);
-}
 
 var URI = function(string) {
 	var self = this;
@@ -209,100 +202,9 @@ var serializeMessage = function(msg) {
 	return raw;
 };
 
-
-
-var Connection = function(ws) {
-	var self = this;
-  self.id = Math.floor(Math.random() * 10001);
-	ws.on('message', function(message) {
-    log(message);
-		try {
-			var msg = parseMessage(message);
-			self.emit('message', msg);
-      if (msg.type === REQUEST) {
-        self.emit('request', msg);
-      }
-      else if (msg.type === RESPONSE) {
-        self.emit('response', msg);
-      }
-      else if (msg.type === NOTIFICATION) {
-        self.emit('notification', msg);
-      }
-		}
-		catch(e) {
-			log("230: " + e);
-		}
-	});
-
-  self.sendMessage = function(msg) {
-    try {
-      var raw = serializeMessage(msg);
-      log("Send message");
-      log(raw);
-      ws.send(raw);
-    }
-    catch(e) {
-      log(e);
-    }
-  };
-};
-Connection.prototype = Object.create(events.EventEmitter.prototype);
-
-var Server = function(options) {
-	var self = this;
-	var port = options.port || 1337;
-	var wss = new WebSocket.Server({ port: port });
-	
-	wss.on('connection', function(ws) {
-		var con = new Connection(ws);
-		self.emit('connection', con);
-    
-    con.on('message', function(msg) {
-      self.emit('message', con, msg);
-    });
-    con.on('request', function(msg) {
-      self.emit('request', con, msg);
-    });
-    con.on('response', function(msg) {
-      self.emit('response', con, msg);
-    });
-    con.on('notification', function(msg) {
-      self.emit('notification', con, msg);
-    });
-	});
-};
-Server.prototype = Object.create(events.EventEmitter.prototype);
-
-var Client = function(options) {
-  var self = this;
-  var port = options.port || 1337;
-  var host = options.host || 'localhost';
-  
-  var wsc = new WebSocket('ws://' + host + ':' + port);
-  var con = new Connection(wsc);
-  wsc.on('open', function() {
-    self.emit('open');
-  });
-  wsc.on('error', function(msg) {
-    self.emit('error', msg);
-  });
-  wsc.on('message', function(raw) {
-    try {
-      var msg = parseMessage(raw);
-      self.emit('message', msg);
-    }
-    catch (e) {
-      self.emit('error', "Error while recieving message\n" + e);
-    }
-  });
-  wsc.on('close', function() {
-    self.emit('close')
-  });
-  self.sendMessage = function(msg) {
-    con.sendMessage(msg);
-  };
-};
-Client.prototype = Object.create(events.EventEmitter.prototype);
+var log = function(text) {
+  console.log("fosp: " + text);
+}
 
 module.exports = {
 	//REQUESTS: REQUESTS,
@@ -312,9 +214,6 @@ module.exports = {
   RESPONSE: RESPONSE,
   NOTIFICATION: NOTIFICATION,
   URI: URI,
-	//parseMessage: parseMessage,
-	//serializeMessage: serializeMessage,
-	//Connection: Connection,
-	Server: Server,
-  Client: Client
+	parseMessage: parseMessage,
+	serializeMessage: serializeMessage,
 };

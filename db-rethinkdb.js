@@ -116,7 +116,6 @@ var listChildren = function(path, callback) {
             var pA = result[i].path.split('/');
             children.push(pA[pA.length - 1]);
           }
-          log(children)
           callback(null, children)
         }
       });

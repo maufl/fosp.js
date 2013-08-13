@@ -1,10 +1,11 @@
 //var r = require('rethinkdb');
 var fosp = require('./fosp');
+var Server = require('./fosp/server');
 var options = { port: 1337, domain: 'example.com' };
 var dbOptions = { host: 'localhost', port: 28015, db: 'fosp' };
 var db = require('./db-rethinkdb');
 
-var fospServer = new fosp.Server(options);
+var fospServer = new Server(options);
 
 var log = function(text) {
   console.log("++ " + text);

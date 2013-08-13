@@ -1,4 +1,5 @@
 var fosp = require('./fosp');
+var Client = require('./fosp/client');
 var readline = require('readline');
 var options = { port: 1337, domain: 'example.com' };
 
@@ -8,12 +9,12 @@ var rl = readline.createInterface({
 });
 
 console.log('Starting client');
-var fospClient = new fosp.Client(options);
+var client = new Client(options);
 var cwd = 'test@example.net';
 var seq = 1;
 var waitForResponse = false;
 
-fospClient.on('open', function() {
+client.on('open', function() {
   console.log('Established connection');
   rl.setPrompt('fosp:'+cwd+'>');
   rl.prompt();
@@ -85,17 +86,17 @@ fospClient.on('open', function() {
   });
 });
 
-fospClient.on('error', function(msg) {
+client.on('error', function(msg) {
   console.log();
   console.error(msg);
   process.exit(1);
 });
-fospClient.on('close', function() {
+client.on('close', function() {
   console.log();
   console.log('Connection closed');
   process.exit(1);
 });
-fospClient.on('message', function(msg) {
+client.on('message', function(msg) {
   console.log();
   console.log(msg);
   waitForResponse = false;
@@ -140,12 +141,7 @@ var cd = function(arg) {
 var select = function(arg) {
   var oldCwd = cwd;
   cd(arg);
-  fospClient.sendMessage({
-    type: fosp.REQUEST,
-    request: 'SELECT',
-    seq: seq,
-    uri: cwd,
-  });
+  client.con.sendSelect(cwd, seq);
   seq++;
   cwd = oldCwd;
   waitForResponse = true;
@@ -153,13 +149,7 @@ var select = function(arg) {
 
 var create = function(name, body) {
   var path = cwd + "/" + name;
-  fospClient.sendMessage({
-    type: fosp.REQUEST,
-    request: 'CREATE',
-    seq: seq,
-    uri: path,
-    body: body
-  });
+  client.con.sendCreate(path, seq, {}, body);
   seq++;
 }
 
@@ -167,25 +157,14 @@ var update = function(name, body) {
   var path = cwd;
   if (name !== '.')
     path += '/' + name;
-  fospClient.sendMessage({
-    type: fosp.REQUEST,
-    request: 'UPDATE',
-    seq: seq,
-    uri: path,
-    body: body
-  });
+  client.con.sendUpdate(path, seq, {}, body);
   seq++;
 }
 
 var _delete = function(name) {
   var oldCwd = cwd;
   cd(name);
-  fospClient.sendMessage({
-    type: fosp.REQUEST,
-    request: 'DELETE',
-    seq: seq,
-    uri: cwd,
-  });
+  client.con.sendDelete(cwd, seq);
   seq++;
   cwd = oldCwd;
   waitForResponse = true;
@@ -194,12 +173,7 @@ var _delete = function(name) {
 var list = function(name) {
   var oldCwd = cwd;
   cd(name);
-  fospClient.sendMessage({
-    type: fosp.REQUEST,
-    request: 'LIST',
-    seq: seq,
-    uri: cwd,
-  });
+  client.con.sendList(cwd, seq);
   seq++;
   cwd = oldCwd;
   waitForResponse = true;

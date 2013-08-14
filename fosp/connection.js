@@ -1,7 +1,7 @@
 // This object type models a fosp connection
 var events = require('events')
 var extend = require('extend')
-var fosp = require('../fosp')
+var Message = require('./message')
 var helpers = require('./connection-helpers')
 var Context = require('./connection-context')
 
@@ -14,11 +14,11 @@ var Connection = function(ws) {
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
     try {
-      var msg = fosp.parseMessage(message);
+      var msg = new Message(self, message);
       self.emit('message', msg);
     }
     catch(e) {
-      log(e);
+      log(e.stack);
     }
   });
 
@@ -32,13 +32,13 @@ var Connection = function(ws) {
 
   self.on('message', function(msg) {
     switch(msg.type) {
-      case fosp.REQUEST:
+      case Message.REQUEST:
         self.emit('request', msg);
         break;
-      case fosp.RESPONSE:
+      case Message.RESPONSE:
         self.emit('response', msg);
         break;
-      case fosp.NOTIFICATION:
+      case Message.NOTIFICATION:
         self.emit('notification', msg);
         break;
       default:
@@ -101,13 +101,17 @@ Connection.prototype = Object.create(events.EventEmitter.prototype);
 Connection.prototype.sendMessage = function(msg) {
   var self = this;
   try {
-    var raw = fosp.serializeMessage(msg);
+    if (! (msg instanceof Message)) {
+      log("Making a message out of this message");
+      msg = new Message(self, msg);
+    }
+    var raw = msg.serialize();
     log("Send message");
     log(raw);
     this.ws.send(raw);
   }
   catch(e) {
-    log(e);
+    log(e.stack);
   }
 }
 

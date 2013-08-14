@@ -1,5 +1,4 @@
 var fosp = require('./fosp');
-var Client = require('./fosp/client');
 var readline = require('readline');
 
 var rl = readline.createInterface({
@@ -8,7 +7,7 @@ var rl = readline.createInterface({
 });
 
 console.log('Starting client');
-var client = new Client();
+var client = new fosp.Client();
 var cwd = 'X';
 var seq = 1;
 var waitForResponse = false;
@@ -105,7 +104,7 @@ client.on('close', function() {
   console.log('Connection closed');
   process.exit(1);
 });
-client.on('message', function(msg) {
+client.con.on('message', function(msg) {
   console.log();
   console.log(msg);
   waitForResponse = false;

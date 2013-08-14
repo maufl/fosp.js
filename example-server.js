@@ -1,13 +1,12 @@
 //var r = require('rethinkdb');
 var fosp = require('./fosp');
-var Server = require('./fosp/server');
 var options = { port: 1337, domain: 'example.com' };
 var dbOptions = { host: 'localhost', port: 28015, db: 'fosp' };
 var db = require('./db-rethinkdb');
 
-var fospServer = new Server(options);
+var server = new fosp.Server(options);
 
-fospServer.on('connection', function(con) {
+server.on('connection', function(con) {
   log('Recieved a new connection: ' + con.id);
 
   con.on('close', function() {
@@ -15,7 +14,7 @@ fospServer.on('connection', function(con) {
   });
 });
 
-fospServer.on('connect', function(con, msg) {
+server.on('connect', function(con, msg) {
   if (msg.body.version === "0.1") {
     con.ctx.negotiated = true;
     con.sendSucceded(100, msg.seq);
@@ -23,7 +22,7 @@ fospServer.on('connect', function(con, msg) {
   }
   con.sendFailed(400, msg.seq);
 });
-fospServer.on('authenticate', function(con, msg) {
+server.on('authenticate', function(con, msg) {
   if (!isNegotiated(con, msg))
     return;
   db.authenticateUser(msg.body.name, msg.body.password, function(failed) {
@@ -35,7 +34,7 @@ fospServer.on('authenticate', function(con, msg) {
     con.sendSucceded(210, msg.seq);
   });
 });
-fospServer.on('register', function(con, msg) {
+server.on('register', function(con, msg) {
   if (!isNegotiated(con, msg))
     return;
   db.addUser(msg.body.name, msg.body.password, function(failed) {
@@ -45,7 +44,7 @@ fospServer.on('register', function(con, msg) {
       con.sendSucceded(200, msg.seq);
   });
 });
-fospServer.on('select', function(con, msg) {
+server.on('select', function(con, msg) {
   if (!isAuthenticated(con, msg))
     return;
   db.getNode(msg.uri.toString(), function(err, result) {
@@ -57,7 +56,7 @@ fospServer.on('select', function(con, msg) {
       con.sendSucceded(200, msg.seq, {}, result);
   });
 });
-fospServer.on('create', function(con, msg) {
+server.on('create', function(con, msg) {
   if (!isAuthenticated(con, msg))
     return;
   db.setNode(msg.uri.toString(), msg.body, function(err, result) {
@@ -67,7 +66,7 @@ fospServer.on('create', function(con, msg) {
       con.sendSucceded(201, msg.seq);
   });
 });
-fospServer.on('update', function(con, msg) {
+server.on('update', function(con, msg) {
   if (!isAuthenticated(con, msg))
     return;
   db.updateNode(msg.uri.toString(), msg.body, function(err, result) {
@@ -77,7 +76,7 @@ fospServer.on('update', function(con, msg) {
       con.sendSucceded(200, msg.seq);
   });
 });
-fospServer.on('delete', function(con, msg) {
+server.on('delete', function(con, msg) {
   if (!isAuthenticated(con, msg))
     return;
   db.deleteNode(msg.uri.toString(), function(err) {
@@ -87,7 +86,7 @@ fospServer.on('delete', function(con, msg) {
       con.sendSucceded(200, msg.seq);
   });
 });
-fospServer.on('list', function(con, msg) {
+server.on('list', function(con, msg) {
   if (!isAuthenticated(con, msg))
     return;
   db.listChildren(msg.uri.toString(), function(err, children) {

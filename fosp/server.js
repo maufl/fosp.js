@@ -1,7 +1,6 @@
 // Basic fosp server function
 var events = require('events')
 var WebSocket = require('ws');
-var fosp = require('../fosp')
 var Connection = require('./connection')
 
 var Server = function(options) {

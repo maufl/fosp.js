@@ -1,8 +1,8 @@
 // fosp client object protoype
 var events = require('events');
 var WebSocket = require('ws');
-var fosp = require('../fosp');
-var Connection = require('./connection')
+var Message = require('./message');
+var Connection = require('./connection');
 
 var Client = function(options) {
   var self = this;
@@ -19,15 +19,6 @@ var Client = function(options) {
   });
   self.wsc.on('error', function(msg) {
     self.emit('error', msg);
-  });
-  self.wsc.on('message', function(raw) {
-    try {
-      var msg = fosp.parseMessage(raw);
-      self.emit('message', msg);
-    }
-    catch (e) {
-      self.emit('error', "Error while recieving message\n" + e);
-    }
   });
   self.wsc.on('close', function() {
     self.emit('close')

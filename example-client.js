@@ -2,23 +2,25 @@ var fosp = require('./fosp');
 var readline = require('readline');
 
 var rl = readline.createInterface({
-    input: process.stdin,
-      output: process.stdout
+  input: process.stdin,
+    output: process.stdout
 });
 
-console.log('Starting client');
+var log = function(text) {
+  console.log('example-client: ' + text);
+}
+
+log('Starting client');
 var client = new fosp.Client();
 var cwd = 'X';
-var seq = 1;
 var waitForResponse = false;
 var user = '';
 
-client.on('open', function() {
-  console.log('Established connection');
-  console.log('Negotiating version');
-  client.con.sendConnect(seq, {}, {version: "0.1"});
+client.con.on('open', function() {
+  log('Established connection');
+  log('Negotiating version');
+  client.con.sendConnect({}, {version: "0.1"});
   setPrompt();
-  seq++;
   rl.prompt();
   rl.on('line', function(line) {
     var argv = line.split(' ');
@@ -30,11 +32,11 @@ client.on('open', function() {
           setPrompt();
         }
         else {
-          console.log('Missing argument for cd');
+          log('Missing argument for cd');
         }
         break;
       case 'pwd':
-        console.log(cwd);
+        log(cwd);
         break;
       case 'exit':
         process.exit(0);
@@ -53,7 +55,7 @@ client.on('open', function() {
         break;
       case 'create':
         if (argv.length < 2) {
-          console.log('To few arguments for create');
+          log('To few arguments for create');
           break;
         }
         else {
@@ -64,7 +66,7 @@ client.on('open', function() {
         break;
       case 'update':
         if (argv.length < 2) {
-          console.log('To few arguments for create');
+          log('To few arguments for create');
           break;
         }
         else {
@@ -86,7 +88,7 @@ client.on('open', function() {
           list('.');
         break;
       default:
-        console.log('Unknown command');
+        log('Unknown command');
         break;
     }
     if (!waitForResponse)
@@ -94,19 +96,19 @@ client.on('open', function() {
   });
 });
 
-client.on('error', function(msg) {
-  console.log();
-  console.error(msg);
+client.con.on('error', function(msg) {
+  log();
+  error(msg);
   process.exit(1);
 });
-client.on('close', function() {
-  console.log();
-  console.log('Connection closed');
+client.con.on('close', function() {
+  log();
+  log('Connection closed');
   process.exit(1);
 });
 client.con.on('message', function(msg) {
-  console.log();
-  console.log(msg);
+  log();
+  log(msg);
   waitForResponse = false;
   rl.prompt();
 });
@@ -128,7 +130,7 @@ var cd = function(arg) {
         cwd = cwdDirs.join('/');
       }
       else {
-        console.log('Already at the root of tree');
+        log('Already at the root of tree');
         cwd = oldCwd;
         break;
       }
@@ -143,7 +145,7 @@ var cd = function(arg) {
       cwd += "/" + dir;
     }
     else {
-      console.log('Invalid dir ' + dir);
+      log('Invalid dir ' + dir);
       cwd = oldCwd;
       break;
     }
@@ -151,13 +153,11 @@ var cd = function(arg) {
 };
 
 var register = function(argv) {
-  client.con.sendRegister(seq, {}, { name: argv[0], password: argv[1] });
-  seq++;
+  client.con.sendRegister({}, { name: argv[0], password: argv[1] });
 }
 
 var authenticate = function(argv) {
-  client.con.sendAuthenticate(seq, {}, { name: argv[0], password: argv[1] });
-  seq++;
+  client.con.sendAuthenticate({}, { name: argv[0], password: argv[1] });
   user = argv[0];
   if (cwd === 'X')
     cd(argv[0] + '@localhost')
@@ -166,31 +166,27 @@ var authenticate = function(argv) {
 var select = function(arg) {
   var oldCwd = cwd;
   cd(arg);
-  client.con.sendSelect(cwd, seq);
-  seq++;
+  client.con.sendSelect(cwd);
   cwd = oldCwd;
   waitForResponse = true;
 };
 
 var create = function(name, body) {
   var path = cwd + "/" + name;
-  client.con.sendCreate(path, seq, {}, body);
-  seq++;
+  client.con.sendCreate(path, {}, body);
 }
 
 var update = function(name, body) {
   var path = cwd;
   if (name !== '.')
     path += '/' + name;
-  client.con.sendUpdate(path, seq, {}, body);
-  seq++;
+  client.con.sendUpdate(path, {}, body);
 }
 
 var _delete = function(name) {
   var oldCwd = cwd;
   cd(name);
-  client.con.sendDelete(cwd, seq);
-  seq++;
+  client.con.sendDelete(cwd);
   cwd = oldCwd;
   waitForResponse = true;
 }
@@ -198,8 +194,7 @@ var _delete = function(name) {
 var list = function(name) {
   var oldCwd = cwd;
   cd(name);
-  client.con.sendList(cwd, seq);
-  seq++;
+  client.con.sendList(cwd);
   cwd = oldCwd;
   waitForResponse = true;
 }

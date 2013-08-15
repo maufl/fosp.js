@@ -10,6 +10,7 @@ var Connection = function(ws) {
   self.ws = ws;
   self.id = Math.floor(Math.random() * 10001);
   self.ctx = new Context();
+  self.currentSeq = 1;
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
@@ -28,6 +29,10 @@ var Connection = function(ws) {
 
   self.ws.on('close', function() {
     self.emit('close');
+  });
+
+  self.ws.on('error', function(err) {
+    self.emit('error');
   });
 
   self.on('message', function(msg) {

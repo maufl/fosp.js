@@ -13,16 +13,6 @@ var Client = function(options) {
 
   self.wsc = new WebSocket('ws://' + self.host + ':' + self.port);
   self.con = new Connection(self.wsc);
-
-  self.wsc.on('open', function() {
-    self.emit('open');
-  });
-  self.wsc.on('error', function(msg) {
-    self.emit('error', msg);
-  });
-  self.wsc.on('close', function() {
-    self.emit('close')
-  });
 };
 Client.prototype = Object.create(events.EventEmitter.prototype);
 

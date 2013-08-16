@@ -2,6 +2,7 @@
 var events = require('events')
 var extend = require('extend')
 var Message = require('./message')
+var Request = require('./request')
 var Parser = require('./parser')
 var helpers = require('./connection-helpers')
 var Context = require('./connection-context')
@@ -12,6 +13,7 @@ var Connection = function(ws) {
   self.id = Math.floor(Math.random() * 10001);
   self.ctx = new Context();
   self.currentSeq = 1;
+  self.pendingRequests = {};
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
@@ -86,11 +88,21 @@ var Connection = function(ws) {
   });
 
   self.on('response', function(msg) {
+    var req = self.pendingRequests[msg.seq];
+    var existsRequest = false;
+    if (typeof req !== 'undefined' && req instanceof Request) {
+      existsRequest = true;
+      req.emit('response', msg)
+    }
     switch(msg.response) {
       case 'SUCCEDED':
+        if (existsRequest)
+          req.emit('succeded', msg);
         self.emit('succeded', msg);
         break;
       case 'FAILED':
+        if (existsRequest)
+          req.emit('failed', msg);
         self.emit('failed', msg);
         break;
       default:
@@ -107,10 +119,6 @@ Connection.prototype = Object.create(events.EventEmitter.prototype);
 Connection.prototype.sendMessage = function(msg) {
   var self = this;
   try {
-    if (! (msg instanceof Message)) {
-      log("Making a message out of this message");
-      msg = new Message(self, msg);
-    }
     var raw = msg.serialize();
     log("Send message");
     log(raw);
@@ -119,6 +127,7 @@ Connection.prototype.sendMessage = function(msg) {
   catch(e) {
     log(e.stack);
   }
+  return msg;
 }
 
 Connection.prototype.close = function() {

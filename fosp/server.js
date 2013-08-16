@@ -5,8 +5,10 @@ var Connection = require('./connection')
 
 var Server = function(options) {
   var self = this;
-  var port = options.port || 1337;
-  self.wss = new WebSocket.Server({ port: port });
+  self.port = options.port || 1337;
+  self.local_domain = options.local_domain || 'localhost.local';
+  self.connectionPool = {};
+  self.wss = new WebSocket.Server({ port: self.port });
 
   self.wss.on('connection', function(ws) {
     var con = new Connection(ws);

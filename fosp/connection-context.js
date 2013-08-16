@@ -9,7 +9,7 @@ var Context = function(options) {
   self.version = options.version || "";
   self.type = options.type || "";
   self.user = options.user || '';
-  self.remote = options.remote || '';
+  self.remote_domain = options.remote_domain || '';
 };
 
 module.exports = Context;

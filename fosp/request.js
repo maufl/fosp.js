@@ -70,13 +70,13 @@ Request.prototype.sendResponse = function(response, status, headers, body) {
   if (typeof body === 'undefined')
     body = null
   var msg = new Response(self.con, { type: Message.RESPONSE, response: response, status: status, seq: self.seq, headers: headers, body: body });
-  self.con.sendMessage(msg);
+  return self.con.sendMessage(msg);
 }
 Request.prototype.sendSucceded = function(status, headers, body) {
-  this.sendResponse('SUCCEDED', status, headers, body)
+  return this.sendResponse('SUCCEDED', status, headers, body)
 }
 Request.prototype.sendFailed = function(status, headers, body) {
-  this.sendResponse('FAILED', status, headers, body)
+  return this.sendResponse('FAILED', status, headers, body)
 }
 
 Request.prototype.short = function() {

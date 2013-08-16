@@ -15,11 +15,25 @@ var client = new fosp.Client();
 var cwd = 'X';
 var waitForResponse = false;
 var user = '';
+var credentials = { name: 'felix', password: 'passwort' }
 
 client.con.on('open', function() {
   log('Established connection');
   log('Negotiating version');
-  client.con.sendConnect({}, {version: "0.1"});
+  client.con.sendConnect({}, {version: "0.1"}).on('failed', function(resp) {
+    log('Failed to negotiate connection')
+    log(msg.short())
+  }).on('succeded', function(resp) {
+    log('Successfully negotiated connection!')
+    log('Authenticating ...')
+    client.con.sendAuthenticate({}, credentials).on('failed', function(resp) {
+      log('Authenticating failed, try again yourself (use "authenticate")');
+    }).on('succeded', function(resp) {
+      cd(credentials.name + '@localhost');
+      user = credentials.name;
+      log('Succesfully authenticated!');
+    });
+  });
   setPrompt();
   rl.prompt();
   rl.on('line', function(line) {

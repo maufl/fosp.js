@@ -1,4 +1,5 @@
 // Everything message related
+var events = require('events');
 
 /* Message format
  * REQUEST := REQUEST_TYPE + " " + RESOURCE_IDENTIFIER + " " + SEQUENCE_NUMBER\r\n
@@ -52,6 +53,8 @@ Message.EVENTS = EVENTS;
 Message.REQUEST = REQUEST;
 Message.RESPONSE = RESPONSE;
 Message.NOTIFICATION = NOTIFICATION;
+
+Message.prototype = Object.create(events.EventEmitter.prototype);
 
 
 Message.prototype.toString = function() {

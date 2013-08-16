@@ -8,6 +8,7 @@ var Server = function(options) {
   self.port = options.port || 1337;
   self.local_domain = options.local_domain || 'localhost.local';
   self.connectionPool = {};
+  self.middlewareStack = [];
   self.wss = new WebSocket.Server({ port: self.port });
 
   self.wss.on('connection', function(ws) {
@@ -18,14 +19,43 @@ var Server = function(options) {
       'connect', 'authenticate', 'register', 'select', 'create', 'update', 'delete', 'list',
       'succeded', 'failed',
       'created', 'updated', 'deleted'
-    ].forEach(function(eventId) {
+    ];
+
+    eventIds.forEach(function(eventId) {
       con.on(eventId, function(msg) {
+        var passed = true;
+        for (var i=0; i < self.middlewareStack.length; i++) {
+          var mw = self.middlewareStack[i];
+          var handler = mw.handlers[eventId];
+          if (typeof handler === 'function')
+            passed = handler(msg);
+          else
+            passed = mv.defaultHandler(msg);
+          if (!passed)
+            break;
+        }
         self.emit(eventId, con, msg);
       });
     });
   });
 };
 Server.prototype = Object.create(events.EventEmitter.prototype);
+
+Server.prototype.delegateRequest = function(req) {
+  var domain = req.uri.domain;
+  if (domain === '')
+    throw new Error('Tried to delegate to an empty domain');
+  if (domain === self.local_domain)
+    throw new Error('Tried to delegeta request for own domain');
+
+  if (typeof connectionPool[domain] === 'undefined' || connectionPool[domain] === null) {
+    var newWs = new WebSocket('ws://'+domain+':'+self.port);
+    var newConnection = new Connection(ws);
+    newConnection.on('open', function() {
+      newConnection.sendConnect({}, {version:"0.1"});
+    });
+  }
+}
 
 var log = function(text) {
   console.log('fosp/server: ' + text);

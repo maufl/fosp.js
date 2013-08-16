@@ -16,8 +16,4 @@ var Client = function(options) {
 };
 Client.prototype = Object.create(events.EventEmitter.prototype);
 
-var log = function(text) {
-  console.log('fosp/client: ' + text);
-}
-
 module.exports = Client;

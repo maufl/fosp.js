@@ -3,6 +3,7 @@ var events = require('events')
 var WebSocket = require('ws');
 var Connection = require('./connection')
 var ConnectionNegotiator = require('./mw-connection-negotiator');
+var L = require('./logger').forFile(__filename);
 
 var Server = function(options) {
   var self = this;
@@ -31,7 +32,7 @@ var Server = function(options) {
         for (var i=0; i < self.middlewareStack.length; i++) {
           passed = self.middlewareStack[i].handle(eventId, msg);
           if (!passed) {
-            log('Middleware chain halted at ' + i)
+            L.info('Middleware chain halted at ' + i)
             break;
           }
         }
@@ -57,10 +58,6 @@ Server.prototype.delegateRequest = function(req) {
       newConnection.sendConnect({}, {version:"0.1"});
     });
   }
-}
-
-var log = function(text) {
-  console.log('fosp/server: ' + text);
 }
 
 module.exports = Server;

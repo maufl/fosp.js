@@ -4,10 +4,11 @@ var Message = require('./message')
 var Request = require('./request')
 var Response = require('./response')
 var Notification = require('./notification')
+var L = require('./logger').forFile(__filename);
 
 // Message serialization and parsing
 var _parseMessage = function(raw) {
-  log('Parsing message');
+  L.debug('Parsing message');
   var message = {type: null, seq: null, request: null, response: null, event: null, uri: null, status: null, headers: {}, body: null};
   var lines = raw.split("\r\n");
   var main_line = lines.shift();
@@ -15,7 +16,7 @@ var _parseMessage = function(raw) {
 
   // Identify the typ of the message
   var identifier = main[0];
-  log('Identifier is ' + identifier);
+  L.debug('Identifier is ' + identifier);
   if (Message.REQUESTS.indexOf(identifier) >= 0) {
     message.type = Message.REQUEST;
     message.request = identifier;
@@ -92,10 +93,6 @@ Parser.parseMessage = function(con, raw) {
     return new Notification(con, msg);
 
   throw new Error('Something\'s wrong with this message!');
-}
-
-var log = function(text) {
-  console.log('fosp/parser: ' + text)
 }
 
 module.exports = Parser

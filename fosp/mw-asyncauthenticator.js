@@ -1,5 +1,6 @@
 // generic connection authenticator
 var Middleware = require('./middleware')
+var L = require('./logger').forFile(__filename);
 
 var AsyncAuthenticator = function(authFunc) {
   this.authFunc = authFunc;
@@ -13,16 +14,16 @@ AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
     msg.sendSucceded(200);
     return false;
   }
-  log('Handle authentication')
+  L.info('Handle authentication')
   this.authFunc(msg.body.name, msg.body.password, function(success) {
-    log('User is authenticated ' + success);
+    L.info('User is authenticated ' + success);
     if (success) {
       msg.sendSucceded(200);
       msg.con.ctx.authenticated = true;
-      log('Successfully authenticated!');
+      L.info('Successfully authenticated!');
       return;
     }
-    log('Authentication unsuccessfull');
+    L.info('Authentication unsuccessfull');
     msg.sendFailed(401);
   });
   return false;
@@ -39,10 +40,6 @@ AsyncAuthenticator.prototype.handleConnection = function(msg) {
 
 AsyncAuthenticator.prototype.defaultHandler = function(msg) {
   return msg.con.ctx.authenticated;
-}
-
-var log = function(text) {
-  console.log('fosp/authenticator: ' + text);
 }
 
 module.exports = AsyncAuthenticator;

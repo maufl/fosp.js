@@ -3,6 +3,7 @@ var readline = require('readline');
 var sprintf = require('sprintf').sprintf;
 var fs = require('fs');
 var fosp = require('./fosp');
+var L = require('./fosp/logger').forFile(__filename);
 
 var ExampleClient = function() {
   var self = this;
@@ -10,23 +11,23 @@ var ExampleClient = function() {
   self.rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   self.client = new fosp.Client({host: self.config.user.domain});
 
-  self.log('Starting client');
+  L.info('Starting client');
   self.client.con.on('open', function() {
-    self.log('Established connection');
-    self.log('Negotiating version');
+    L.info('Established connection');
+    L.info('Negotiating version');
     self.client.con.sendConnect({}, {version: "0.1"}).on('failed', function(resp) {
-      self.log('Failed to negotiate connection');
-      self.log(resp.toString());
-      self.log('Exiting');
+      L.info('Failed to negotiate connection');
+      L.warn(resp.toString());
+      L.warn('Exiting');
       exit(1);
     }).on('succeded', function(resp) {
-      self.log('Successfully negotiated connection!')
-      self.log('Authenticating ...')
+      L.info('Successfully negotiated connection!')
+      L.info('Authenticating ...')
       self.client.con.sendAuthenticate({}, { name: self.config.user.name, password: self.config.user.password }).on('failed', function(resp) {
-        self.log('Authenticating failed, try again yourself (use "authenticate")');
+        L.warn('Authenticating failed, try again yourself (use "authenticate")');
         self.prompt()
       }).on('succeded', function(resp) {
-        self.log('Succesfully authenticated!');
+        L.info('Succesfully authenticated!');
         self.prompt()
       });
     });
@@ -42,11 +43,11 @@ var ExampleClient = function() {
           self.prompt();
         }
         else {
-          self.log('Missing argument for cd');
+          L.error('Missing argument for cd');
         }
         break;
       case 'pwd':
-        self.log(cwd);
+        console.log(cwd);
         break;
       case 'exit':
         process.exit(0);
@@ -65,7 +66,7 @@ var ExampleClient = function() {
         break;
       case 'create':
         if (argv.length < 2) {
-          self.log('To few arguments for create');
+          L.error('To few arguments for create');
           break;
         }
         else {
@@ -76,7 +77,7 @@ var ExampleClient = function() {
         break;
       case 'update':
         if (argv.length < 2) {
-          self.log('To few arguments for create');
+          L.error('To few arguments for create');
           break;
         }
         else {
@@ -98,27 +99,23 @@ var ExampleClient = function() {
           self.list('.');
         break;
       default:
-        self.log('Unknown command');
+        L.warn('Unknown command');
         self.prompt();
         break;
     }
   });
 
   self.client.con.on('error', function(msg) {
-    self.log();
-    self.log(msg);
+    console.log();
+    L.error(msg);
     process.exit(1);
   });
   self.client.con.on('close', function() {
-    self.log();
-    self.log('Connection closed');
+    console.log();
+    L.warn('Connection closed');
     process.exit(1);
   });
 
-}
-
-ExampleClient.prototype.log = function(text) {
-  console.log('example-client: ' + text);
 }
 
 ExampleClient.prototype.setPrompt = function() {
@@ -142,7 +139,7 @@ ExampleClient.prototype.cd = function(path) {
         this.config.cwd = cwdDirs.join('/');
       }
       else {
-        this.log('Already at the root of tree');
+        L.error('Already at the root of tree');
         this.config.cwd = oldCwd;
         break;
       }
@@ -157,7 +154,7 @@ ExampleClient.prototype.cd = function(path) {
       this.config.cwd += "/" + dir;
     }
     else {
-      this.log('Invalid dir ' + dir);
+      L.error('Invalid dir ' + dir);
       this.config.cwd = oldCwd;
       break;
     }
@@ -175,11 +172,11 @@ ExampleClient.prototype.formatResponsePrompt = function(req, succeded, failed, t
     self.prompt();
   });
   req.on('failed', function(resp) {
-    console.log(sprintf(failed, {req: req, resp: resp}));
+    L.warn(sprintf(failed, {req: req, resp: resp}));
     self.prompt();
   });
   req.on('timeout', function(resp) {
-    console.log(sprintf(timeout, {req: req, resp: resp}));
+    L.warn(sprintf(timeout, {req: req, resp: resp}));
     self.prompt();
   });
 }

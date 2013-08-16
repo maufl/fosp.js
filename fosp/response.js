@@ -1,6 +1,7 @@
 // Response class
 var extend = require('extend');
 var Message = require('./message');
+var L = require('./logger').forFile(__filename);
 
 var Response = function(con, msg) {
   var self = this;
@@ -13,7 +14,7 @@ Response.prototype = Object.create(Message.prototype);
 
 Response.prototype.serialize = function() {
   var self = this
-  log("Serializing message");
+  L.debug("Serializing message");
   var err = self.validate();
   if (err)
     throw err;
@@ -64,10 +65,6 @@ Response.prototype.validate = function() {
 
 Response.prototype.short = function() {
     return this.response + ' ' + this.status + ' ' + this.seq;
-};
-
-var log = function(text) {
-  console.log('fosp/response: ' + text);
 };
 
 module.exports = Response;

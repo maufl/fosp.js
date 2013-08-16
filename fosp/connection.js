@@ -6,6 +6,7 @@ var Request = require('./request')
 var Parser = require('./parser')
 var helpers = require('./connection-helpers')
 var Context = require('./connection-context')
+var L = require('./logger').forFile(__filename);
 
 var Connection = function(ws) {
   var self = this;
@@ -22,7 +23,7 @@ var Connection = function(ws) {
       self.emit('message', msg);
     }
     catch(e) {
-      log(e.stack);
+      L.error(e.stack);
     }
   });
 
@@ -50,7 +51,7 @@ var Connection = function(ws) {
         self.emit('notification', msg);
         break;
       default:
-        log('Recieved unknow type of message: ' + msg.type)
+        L.warn('Recieved unknow type of message: ' + msg.type)
         break;
     }
   });
@@ -82,7 +83,7 @@ var Connection = function(ws) {
         self.emit('list', msg);
         break;
       default:
-        log('Recieved unknown request: ' + msg.request)
+        L.warn('Recieved unknown request: ' + msg.request)
         break;
     }
   });
@@ -109,7 +110,7 @@ var Connection = function(ws) {
         self.emit('failed', msg);
         break;
       default:
-        log('Recieved unknown response: ' + msg.response)
+        L.warn('Recieved unknown response: ' + msg.response)
         break;
     }
   });
@@ -123,8 +124,8 @@ Connection.prototype.sendMessage = function(msg) {
   var self = this;
   try {
     var raw = msg.serialize();
-    log("Send message");
-    log(raw);
+    L.info("Send message: " + msg.short());
+    L.debug(raw);
     this.ws.send(raw);
     if (msg instanceof Request) {
       msg.timeoutHandle = setTimeout(function(){
@@ -136,7 +137,7 @@ Connection.prototype.sendMessage = function(msg) {
     }
   }
   catch(e) {
-    log(e.stack);
+    L.error(e.stack);
   }
   return msg;
 }
@@ -146,9 +147,5 @@ Connection.prototype.close = function() {
 }
 
 extend(Connection.prototype, helpers);
-
-var log = function(text) {
-  console.log('fosp/connection: ' + text)
-}
 
 module.exports = Connection;

@@ -1,5 +1,6 @@
 // middleware that negotiates the connection
 var Middleware = require('./middleware')
+var L = require('./logger').forFile(__filename);
 
 var ConnectionNegotiator = function(version) {
   this.version = version;
@@ -11,10 +12,10 @@ ConnectionNegotiator.prototype.handleConnect = function(msg) {
   if (msg.body.version === this.version) {
     msg.sendSucceded(100);
     msg.con.ctx.negotiated = true;
-    log('Connection successfully negotiated');
+    L.info('Connection successfully negotiated');
     return true;
   }
-  log('Connection negotiation failed');
+  L.warn('Connection negotiation failed');
   msg.sendFailed(500);
   return false;
 }
@@ -40,9 +41,5 @@ ConnectionNegotiator.prototype.handleResponse = function(msg) {
 }
 
 ConnectionNegotiator.prototype.handleNotification = ConnectionNegotiator.prototype.handleResponse;
-
-var log = function(text) {
-  console.log('fosp/connection-negotiator: ' + text);
-}
 
 module.exports = ConnectionNegotiator;

@@ -1,10 +1,9 @@
+// DB layer
 var r = require('rethinkdb');
 var extend = require('extend');
 var fosp = require('./fosp');
+var L = require('./fosp/logger').forFile(__filename);
 
-var log = function(text) {
-  console.log("db: " + text);
-}
 var RethinkDB = function(options) {
   var self = this;
   self.host = options.host;

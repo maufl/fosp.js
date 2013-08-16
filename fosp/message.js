@@ -61,8 +61,4 @@ Message.prototype.toString = function() {
   return this.short() + ' :: ' + JSON.stringify(this.body);
 }
 
-var log = function(text) {
-  console.log('fosp/message: ' + text);
-};
-
 module.exports = Message;

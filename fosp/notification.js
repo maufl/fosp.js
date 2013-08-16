@@ -1,6 +1,7 @@
 // Notification class
 var extend = require('extend');
 var Message = require('./message');
+var L = require('./logger').forFile(__filename);
 
 var Notification = function(con, msg) {
   var self = this;
@@ -13,7 +14,7 @@ Notification.prototype = Object.create(Message.prototype);
 
 Notification.prototype.serialize = function() {
   var self = this
-  log("Serializing message");
+  L.debug("Serializing message");
   var err = self.validate();
   if (err)
     throw err;
@@ -63,10 +64,6 @@ Notification.prototype.validate = function() {
 
 Notification.prototype.short = function() {
   return this.event + ' ' + this.uri.toString();
-};
-
-var log = function(text) {
-  console.log('fosp/notification: ' + text);
 };
 
 module.exports = Notification;

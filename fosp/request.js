@@ -2,6 +2,7 @@
 var extend = require('extend');
 var Message = require('./message');
 var Response = require('./response');
+var L = require('./logger').forFile(__filename);
 
 var Request = function(con, msg) {
   var self = this;
@@ -17,7 +18,7 @@ Request.prototype.timeout = 15000;
 
 Request.prototype.serialize = function() {
   var self = this
-  log("Serializing request");
+  L.debug("Serializing request");
   var err = self.validate();
   if (err)
     throw err;
@@ -92,10 +93,6 @@ Request.prototype.short = function() {
     str += '*';
   str += ' ' + self.seq;
   return str;
-};
-
-var log = function(text) {
-  console.log('fosp/request: ' + text);
 };
 
 module.exports = Request;

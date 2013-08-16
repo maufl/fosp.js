@@ -4,18 +4,19 @@ var fosp = require('./fosp');
 var AuthenticatorMiddleware = require('./fosp/mw-asyncauthenticator');
 var RemoteDomainRouter = require('./fosp/mw-remote-domain-router');
 var RethinkDB = require('./db-rethinkdb');
+var L = require('./fosp/logger').forFile(__filename);
 
 var options = JSON.parse(fs.readFileSync('server.conf'));
 var server = new fosp.Server(options);
 var db = new RethinkDB(options.db);
 
-console.log('Sever startet');
+L.info('Sever startet');
 
 server.on('connection', function(con) {
-  log('Recieved a new connection: ' + con.id);
+  L.info('Recieved a new connection: ' + con.id);
 
   con.on('close', function() {
-    log('Closing connection: ' + con.id);
+    L.info('Closing connection: ' + con.id);
   });
 });
 
@@ -25,7 +26,7 @@ var auth = new AuthenticatorMiddleware(function(name, password, callback) {
     callback(success);
   });
 });
-console.log('Add authentication middleware');
+L.info('Add authentication middleware');
 server.middlewareStack.push(auth);
 
 var rdr = new RemoteDomainRouter(server);
@@ -81,7 +82,3 @@ server.on('list', function(con, req) {
       req.sendSucceded(200, {}, children);
   });
 });
-
-var log = function(text) {
-  console.log("example-server: " + text);
-}

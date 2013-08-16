@@ -1,4 +1,6 @@
 // fosp uris
+var L = require('./logger').forFile(__filename);
+
 var URI = function(string) {
   var self = this;
   var i = string.indexOf("/");
@@ -10,7 +12,7 @@ var URI = function(string) {
     self.path = '/';
 
   if (! self.user.match(/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9_\-.]+$/)) {
-    log('Invalid user: ' + self.user);
+    L.error('Invalid user: ' + self.user);
     throw new Error("Invalid user");
   }
   i = self.user.indexOf("@");
@@ -22,10 +24,6 @@ URI.prototype.toString = function() {
 }
 URI.prototype.fqUser = function() {
   return this.user.name + "@" + this.user.domain;
-}
-
-var log = function(text) {
-  console.log('fops/uri: ' + text);
 }
 
 module.exports = URI;

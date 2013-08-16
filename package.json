@@ -1,0 +1,26 @@
+{
+  "name": "fosp",
+  "version": "0.1.0",
+  "author": "Felix Maurer <Felix.Maurer@fsmi.uni-karlsruhe.de>",
+  "description": "Libraries that implement the FOSP & example client and server",
+  "bin": {
+    "fosp-server": "./example-server.js",
+    "fosp-client": "./example-client.js"
+  },
+  "main": "./fosp.js",
+  "keywords": [
+    "fosp"
+  ],
+  "dependencies": {
+    "ws": "*",
+    "extend": "*",
+    "winston": "*",
+    "sprintf": "*",
+    "rethinkdb": "*"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=0.10"
+  }
+}
+

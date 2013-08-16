@@ -1,24 +1,28 @@
 var r = require('rethinkdb');
-var sys = require('sys');
 var extend = require('extend');
 var fosp = require('./fosp');
-var connection = null;
-var db = r.db('fosp');
-var user_db = r.db('fosp_user');
-var user_table = user_db.table('users');
 
 var log = function(text) {
   console.log("db: " + text);
 }
+var RethinkDB = function(options) {
+  var self = this;
+  self.host = options.host;
+  self.port = options.port;
+  self.user_db = r.db(options.userDB);
+  self.user_table = self.user_db.table(options.userTable);
+  self.db = r.db(options.dataDB);
+  self.connection = null;
 
-r.connect( {host: 'localhost', port: 28015}, function(err, conn) {
-  if (err) throw err;
-  connection = conn;
-});
+  r.connect( {host: self.host, port: self.port}, function(err, conn) {
+    if (err) throw err;
+    self.connection = conn;
+  });
+}
 
-var testNode = function(path, callback) {
+RethinkDB.prototype.testNode = function(path, callback) {
   var uri = new fosp.URI(path);
-  db.table(uri.user.name).filter({path: uri.path}).count().run(connection, function(err, num) {
+  this.db.table(uri.user.name).filter({path: uri.path}).count().run(this.connection, function(err, num) {
     if (err || num !== 1)
       callback(false)
     else
@@ -26,9 +30,9 @@ var testNode = function(path, callback) {
   });
 }
 
-var _getNode = function(path, callback) {
+RethinkDB.prototype._getNode = function(path, callback) {
   var uri = new fosp.URI(path);
-  r.db('fosp').table(uri.user.name).filter(r.row('path').eq(uri.path)).run(connection, function(err, cursor) {
+  this.db.table(uri.user.name).filter(r.row('path').eq(uri.path)).run(this.connection, function(err, cursor) {
     if (err)
       callback(err, null);
     else
@@ -48,8 +52,8 @@ var _getNode = function(path, callback) {
   });
 }
 
-var getNode = function(path, callback) {
-  _getNode(path, function(err, result) {
+RethinkDB.prototype.getNode = function(path, callback) {
+  this._getNode(path, function(err, result) {
     if (result)
       callback(null, result.content)
     else
@@ -57,16 +61,15 @@ var getNode = function(path, callback) {
   });
 }
 
-var setNode = function(path, content, callback) {
-  console.log(path);
+RethinkDB.prototype.setNode = function(path, content, callback) {
+  var self = this;
   var uri = new fosp.URI(path);
   var pA = uri.path.split('/');
   pA.pop();
   var parentPath = pA.join('/');
-  console.log("Parent is " + parentPath);
-  getNode(uri.fqUser() + parentPath, function(err, result) {
+  self.getNode(uri.fqUser() + parentPath, function(err, result) {
     if (result)
-      r.db('fosp').table(uri.user.name).insert({path: uri.path, content: content}).run(connection, function(err, result) {
+      self.db.table(uri.user.name).insert({path: uri.path, content: content}).run(self.connection, function(err, result) {
         callback(err);
       });
     else
@@ -74,14 +77,13 @@ var setNode = function(path, content, callback) {
   });
 }
 
-var updateNode = function(path, content, callback) {
+RethinkDB.prototype.updateNode = function(path, content, callback) {
+  var self = this;
   var uri = new fosp.URI(path);
-  _getNode(path, function(err, node) {
+  self._getNode(path, function(err, node) {
     if (node) {
-      log("Before: " + JSON.stringify(node))
       extend(true, node, { content: content });
-      log("After: " + JSON.stringify(node))
-      db.table(uri.user.name).filter(r.row('path').eq(uri.path)).update(node).run(connection, function(err, result) {
+      self.db.table(uri.user.name).filter(r.row('path').eq(uri.path)).update(node).run(self.connection, function(err, result) {
         callback(err)
       });
     }
@@ -91,21 +93,23 @@ var updateNode = function(path, content, callback) {
   });
 }
 
-var deleteNode = function(path, callback) {
+RethinkDB.prototype.deleteNode = function(path, callback) {
+  var self = this;
   var uri = new fosp.URI(path)
   if (uri.path === '/') {
     callback('Can not delete root');
     return;
   }
-  db.table(uri.user.name).filter(r.row('path').match('^'+uri.path)).delete().run(connection, callback);
+  self.db.table(uri.user.name).filter(r.row('path').match('^'+uri.path)).delete().run(self.connection, callback);
 }
 
-var listChildren = function(path, callback) {
+RethinkDB.prototype.listChildren = function(path, callback) {
+  var self = this;
   var uri = new fosp.URI(path)
   path = uri.path
   if (path === '/')
     path = ''
-  db.table(uri.user.name).filter(r.row('path').match('^'+path+'/[^/]+$')).run(connection, function(err, cursor) {
+  self.db.table(uri.user.name).filter(r.row('path').match('^'+path+'/[^/]+$')).run(self.connection, function(err, cursor) {
     if (err)
       callback(err, null)
     else
@@ -125,16 +129,18 @@ var listChildren = function(path, callback) {
 }
 
 
-var getAllNodes = function(path, callback) {
+RethinkDB.prototype.getAllNodes = function(path, callback) {
+  var self = this;
   var uri = new fosp.URI(path);
   var path = uri.path;
   if (path === "")
     path = ""
-  r.db('fosp').table(uri.user.name).filter(function(node) { return r.expr('^'+path).match(node('path')); }).run(connection, callback);
+  self.db.table(uri.user.name).filter(function(node) { return r.expr('^'+path).match(node('path')); }).run(self.connection, callback);
 }
 
-var isUser = function(name, callback) {
-  user_table.filter({name: name}).count().run(connection, function(err, num) {
+RethinkDB.prototype.isUser = function(name, callback) {
+  var self = this;
+  self.user_table.filter({name: name}).count().run(self.connection, function(err, num) {
     if (err || num < 1)
       callback(false)
     else
@@ -142,23 +148,24 @@ var isUser = function(name, callback) {
   });
 }
 
-var addUser = function(name, password, callback) {
-  isUser(name, function(exists) {
+RethinkDB.prototype.addUser = function(name, password, callback) {
+  var self = this;
+  self.isUser(name, function(exists) {
     if (exists) {
       callback("User already exists")
       return;
     }
-    db.tableCreate(name).run(connection, function(err, object) {
+    self.db.tableCreate(name).run(self.connection, function(err, object) {
       if (err) {
         callback(err);
         return;
       }
-      db.table(name).insert({path: '/', content: 'Welcome home'}).run(connection, function(err, result) {
+      self.db.table(name).insert({path: '/', content: 'Welcome home'}).run(self.connection, function(err, result) {
         if (err) {
           callback(err);
           return;
         }
-        user_table.insert({name: name, password: password}).run(connection, function(err, result) {
+        self.user_table.insert({name: name, password: password}).run(self.connection, function(err, result) {
           callback(err)
         });
       });
@@ -166,8 +173,9 @@ var addUser = function(name, password, callback) {
   });
 }
 
-var authenticateUser = function(name, password, callback) {
-  user_table.filter({name: name}).run(connection, function(err, cursor) {
+RethinkDB.prototype.authenticateUser = function(name, password, callback) {
+  var self = this;
+  self.user_table.filter({name: name}).run(self.connection, function(err, cursor) {
     if (err) {
       callback(err);
       return;
@@ -187,13 +195,4 @@ var authenticateUser = function(name, password, callback) {
   });
 }
 
-module.exports = {
-  getNode: getNode,
-  setNode: setNode,
-  updateNode: updateNode,
-  deleteNode: deleteNode,
-  listChildren: listChildren,
-  getAllNodes: getAllNodes,
-  addUser: addUser,
-  authenticateUser: authenticateUser
-}
+module.exports = RethinkDB;

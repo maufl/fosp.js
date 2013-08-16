@@ -20,6 +20,7 @@ var Connection = function(ws) {
   self.ws.on('message', function(message) {
     try {
       var msg = Parser.parseMessage(self, message);
+      L.info('Recieved new message: ' + msg.short());
       self.emit('message', msg);
     }
     catch(e) {

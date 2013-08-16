@@ -32,7 +32,7 @@ var Server = function(options) {
         for (var i=0; i < self.middlewareStack.length; i++) {
           passed = self.middlewareStack[i].handle(eventId, msg);
           if (!passed) {
-            L.info('Middleware chain halted at ' + i)
+            L.debug('Middleware chain halted at ' + i)
             break;
           }
         }

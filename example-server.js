@@ -1,7 +1,9 @@
 //var r = require('rethinkdb');
 var fosp = require('./fosp');
-var options = { port: 1337, domain: 'example.com' };
-var dbOptions = { host: 'localhost', port: 28015, db: 'fosp' };
+var AuthenticatorMiddleware = require('./fosp/mw-asyncauthenticator');
+var RemoteDomainRouter = require('./fosp/mw-remote-domain-router');
+var options = { port: 1337, local_domain: 'mighty-maufl.localdomain' };
+var dbOptions = { host: 'mighty-maufl.localdomain', port: 28015, db: 'fosp' };
 var db = require('./db-rethinkdb');
 
 var server = new fosp.Server(options);
@@ -16,26 +18,18 @@ server.on('connection', function(con) {
   });
 });
 
-server.on('connect', function(con, req) {
-  if (req.body.version === "0.1") {
-    con.ctx.negotiated = true;
-    req.sendSucceded(100);
-    return;
-  }
-  req.sendFailed(400);
-});
-server.on('authenticate', function(con, req) {
-  if (!isNegotiated(con, req))
-    return;
-  db.authenticateUser(req.body.name, req.body.password, function(failed) {
-    if (failed) {
-      req.sendFailed(402);
-      return;
-    }
-    con.ctx.authenticated = true;
-    req.sendSucceded(210);
+var auth = new AuthenticatorMiddleware(function(name, password, callback) {
+  db.authenticateUser(name, password, function(failed) {
+    var success = failed ? false : true;
+    callback(success);
   });
 });
+console.log('Add authentication middleware');
+server.middlewareStack.push(auth);
+
+var rdr = new RemoteDomainRouter(server);
+server.middlewareStack.push(rdr);
+
 server.on('register', function(con, req) {
   if (!isNegotiated(con, req))
     return;

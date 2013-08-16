@@ -2,6 +2,7 @@
 var events = require('events')
 var WebSocket = require('ws');
 var Connection = require('./connection')
+var ConnectionNegotiator = require('./mw-connection-negotiator');
 
 var Server = function(options) {
   var self = this;
@@ -10,6 +11,9 @@ var Server = function(options) {
   self.connectionPool = {};
   self.middlewareStack = [];
   self.wss = new WebSocket.Server({ port: self.port });
+
+  var cn = new ConnectionNegotiator('0.1');
+  self.middlewareStack.push(cn);
 
   self.wss.on('connection', function(ws) {
     var con = new Connection(ws);
@@ -25,16 +29,14 @@ var Server = function(options) {
       con.on(eventId, function(msg) {
         var passed = true;
         for (var i=0; i < self.middlewareStack.length; i++) {
-          var mw = self.middlewareStack[i];
-          var handler = mw.handlers[eventId];
-          if (typeof handler === 'function')
-            passed = handler(msg);
-          else
-            passed = mv.defaultHandler(msg);
-          if (!passed)
+          passed = self.middlewareStack[i].handle(eventId, msg);
+          if (!passed) {
+            log('Middleware chain halted at ' + i)
             break;
+          }
         }
-        self.emit(eventId, con, msg);
+        if (passed)
+          self.emit(eventId, con, msg);
       });
     });
   });

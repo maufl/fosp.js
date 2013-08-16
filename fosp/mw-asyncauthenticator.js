@@ -8,6 +8,11 @@ var AsyncAuthenticator = function(authFunc) {
 AsyncAuthenticator.prototype = Object.create(Middleware.prototype)
 
 AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
+  if (msg.body.type === 'server') {
+    msg.con.ctx.authenticated = true;
+    msg.sendSucceded(200);
+    return false;
+  }
   log('Handle authentication')
   this.authFunc(msg.body.name, msg.body.password, function(success) {
     log('User is authenticated ' + success);

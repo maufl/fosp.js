@@ -6,11 +6,14 @@ var Response = require('./response');
 var Request = function(con, msg) {
   var self = this;
   self.con = con;
+  self.timeoutHandle = null;
 
   extend(true, self, msg);
 }
 
 Request.prototype = Object.create(Message.prototype);
+
+Request.prototype.timeout = 3000;
 
 Request.prototype.serialize = function() {
   var self = this

@@ -89,8 +89,11 @@ var Connection = function(ws) {
 
   self.on('response', function(msg) {
     var req = self.pendingRequests[msg.seq];
+    delete self.pendingRequests[msg.seq];
     var existsRequest = false;
     if (typeof req !== 'undefined' && req instanceof Request) {
+      try { clearTimeout(req.timeoutHandle); }
+      catch (e) {}
       existsRequest = true;
       req.emit('response', msg)
     }
@@ -123,6 +126,14 @@ Connection.prototype.sendMessage = function(msg) {
     log("Send message");
     log(raw);
     this.ws.send(raw);
+    if (msg instanceof Request) {
+      msg.timeoutHandle = setTimeout(function(){
+        msg.emit('timeout');
+      }, msg.timeout);
+      msg.on('timeout', function() {
+        delete self.pendingRequests[msg.seq];
+      });
+    }
   }
   catch(e) {
     log(e.stack);

@@ -2,6 +2,7 @@
 var events = require('events')
 var extend = require('extend')
 var Message = require('./message')
+var Parser = require('./parser')
 var helpers = require('./connection-helpers')
 var Context = require('./connection-context')
 
@@ -15,7 +16,7 @@ var Connection = function(ws) {
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
     try {
-      var msg = new Message(self, message);
+      var msg = Parser.parseMessage(self, message);
       self.emit('message', msg);
     }
     catch(e) {

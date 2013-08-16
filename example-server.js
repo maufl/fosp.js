@@ -6,6 +6,8 @@ var db = require('./db-rethinkdb');
 
 var server = new fosp.Server(options);
 
+console.log('Sever startet');
+
 server.on('connection', function(con) {
   log('Recieved a new connection: ' + con.id);
 
@@ -14,103 +16,103 @@ server.on('connection', function(con) {
   });
 });
 
-server.on('connect', function(con, msg) {
-  if (msg.body.version === "0.1") {
+server.on('connect', function(con, req) {
+  if (req.body.version === "0.1") {
     con.ctx.negotiated = true;
-    con.sendSucceded(100, msg.seq);
+    req.sendSucceded(100);
     return;
   }
-  con.sendFailed(400, msg.seq);
+  req.sendFailed(400);
 });
-server.on('authenticate', function(con, msg) {
-  if (!isNegotiated(con, msg))
+server.on('authenticate', function(con, req) {
+  if (!isNegotiated(con, req))
     return;
-  db.authenticateUser(msg.body.name, msg.body.password, function(failed) {
+  db.authenticateUser(req.body.name, req.body.password, function(failed) {
     if (failed) {
-      con.sendFailed(402, msg.seq);
+      req.sendFailed(402);
       return;
     }
     con.ctx.authenticated = true;
-    con.sendSucceded(210, msg.seq);
+    req.sendSucceded(210);
   });
 });
-server.on('register', function(con, msg) {
-  if (!isNegotiated(con, msg))
+server.on('register', function(con, req) {
+  if (!isNegotiated(con, req))
     return;
-  db.addUser(msg.body.name, msg.body.password, function(failed) {
+  db.addUser(req.body.name, req.body.password, function(failed) {
     if (failed)
-      con.sendFailed(500, msg.seq);
+      req.sendFailed(500);
     else
-      con.sendSucceded(200, msg.seq);
+      req.sendSucceded(200);
   });
 });
-server.on('select', function(con, msg) {
-  if (!isAuthenticated(con, msg))
+server.on('select', function(con, req) {
+  if (!isAuthenticated(con, req))
     return;
-  db.getNode(msg.uri.toString(), function(err, result) {
+  db.getNode(req.uri.toString(), function(err, result) {
     if (err)
-      con.sendFailed(500, msg.seq, {}, "Failed to retrieve data\n" + err);
+      req.sendFailed(500, {}, "Failed to retrieve data\n" + err);
     else if (result === null)
-      con.sendFailed(404, msg.seq, {}, "Not found");
+      req.sendFailed(404, {}, "Not found");
     else
-      con.sendSucceded(200, msg.seq, {}, result);
+      req.sendSucceded(200, {}, result);
   });
 });
-server.on('create', function(con, msg) {
-  if (!isAuthenticated(con, msg))
+server.on('create', function(con, req) {
+  if (!isAuthenticated(con, req))
     return;
-  db.setNode(msg.uri.toString(), msg.body, function(err, result) {
+  db.setNode(req.uri.toString(), req.body, function(err, result) {
     if (err)
-      con.sendFailed(500, msg.seq, {}, err);
+      req.sendFailed(500, {}, err);
     else
-      con.sendSucceded(201, msg.seq);
+      req.sendSucceded(201);
   });
 });
-server.on('update', function(con, msg) {
-  if (!isAuthenticated(con, msg))
+server.on('update', function(con, req) {
+  if (!isAuthenticated(con, req))
     return;
-  db.updateNode(msg.uri.toString(), msg.body, function(err, result) {
+  db.updateNode(req.uri.toString(), req.body, function(err, result) {
     if (err)
-      con.sendFailed(500, msg.seq, {}, err);
+      req.sendFailed(500, {}, err);
     else
-      con.sendSucceded(200, msg.seq);
+      req.sendSucceded(200);
   });
 });
-server.on('delete', function(con, msg) {
-  if (!isAuthenticated(con, msg))
+server.on('delete', function(con, req) {
+  if (!isAuthenticated(con, req))
     return;
-  db.deleteNode(msg.uri.toString(), function(err) {
+  db.deleteNode(req.uri.toString(), function(err) {
     if (err)
-      con.sendFailed(500, msg.seq);
+      req.sendFailed(500);
     else
-      con.sendSucceded(200, msg.seq);
+      req.sendSucceded(200);
   });
 });
-server.on('list', function(con, msg) {
-  if (!isAuthenticated(con, msg))
+server.on('list', function(con, req) {
+  if (!isAuthenticated(con, req))
     return;
-  db.listChildren(msg.uri.toString(), function(err, children) {
+  db.listChildren(req.uri.toString(), function(err, children) {
     if (err)
-      con.sendFailed(500, msg.seq);
+      req.sendFailed(500);
     else
-      con.sendSucceded(200, msg.seq, {}, children);
+      req.sendSucceded(200, {}, children);
   });
 });
 
-var isNegotiated = function(con, msg) {
+var isNegotiated = function(con, req) {
   if (con.ctx.negotiated)
     return true;
   log('Connection is not yet negotiated');
-  con.sendFailed(402, msg.seq);
+  req.sendFailed(402);
   con.close();
   return false;
 }
 
-var isAuthenticated = function(con, msg) {
+var isAuthenticated = function(con, req) {
   if (con.ctx.negotiated && con.ctx.authenticated)
     return true;
   log('Connection is not yet authenticated');
-  con.sendFailed(402, msg.seq);
+  req.sendFailed(402);
   con.close();
   return false;
 }

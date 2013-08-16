@@ -13,7 +13,7 @@ var Request = function(con, msg) {
 
 Request.prototype = Object.create(Message.prototype);
 
-Request.prototype.timeout = 3000;
+Request.prototype.timeout = 15000;
 
 Request.prototype.serialize = function() {
   var self = this

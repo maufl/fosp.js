@@ -41,7 +41,7 @@ var _parseMessage = function(raw) {
 
   // Read the status code
   if (message.type == Message.RESPONSE && main.length >= 2) {
-    message.status = main[1];
+    message.status = parseInt(main[1], 10);
   }
 
   // Read sequence number

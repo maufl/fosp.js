@@ -35,7 +35,7 @@ var Connection = function(ws) {
   });
 
   self.ws.on('error', function(err) {
-    self.emit('error');
+    self.emit('error',err);
   });
 
   self.on('message', function(msg) {

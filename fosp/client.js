@@ -9,7 +9,7 @@ var Client = function(options) {
   if (typeof options !== 'object' || options === null)
     options = {}
   self.port = options.port || 1337;
-  self.host = options.host || 'localhost';
+  self.host = options.host || 'localhost.localdomain';
 
   self.wsc = new WebSocket('ws://' + self.host + ':' + self.port);
   self.con = new Connection(self.wsc);

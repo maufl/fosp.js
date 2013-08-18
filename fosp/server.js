@@ -1,24 +1,37 @@
 // Basic fosp server function
 var events = require('events')
-var WebSocket = require('ws');
+var http = require('http')
+var WebSocket = require('websocket');
 var Connection = require('./connection')
 var ConnectionNegotiator = require('./mw-connection-negotiator');
+var ServerAuthenticator = require('./mw-dns-server-authenticator')
 var L = require('./logger').forFile(__filename);
 
 var Server = function(options) {
   var self = this;
+  // Set options
   self.port = options.port || 1337;
   self.local_domain = options.local_domain || 'localhost.localdomain';
   self.connectionPool = {};
   self.middlewareStack = [];
-  self.wss = new WebSocket.Server({ port: self.port });
+  // Bootstrap underlying objects
+  self.httpServer = new http.createServer(function(request, response) {
+    L.info('Received http request for ' + request.url);
+    response.writeHead(404);
+    response.end();
+  });
+  self.httpServer.listen(self.port, function() { L.info('Server is listening on port ' + self.port) });
+
+  self.wss = new WebSocket.server({ httpServer: self.httpServer, autoAcceptConnections: true });
 
   var cn = new ConnectionNegotiator('0.1');
   self.middlewareStack.push(cn);
+  var dsa = new ServerAuthenticator();
+  self.middlewareStack.push(dsa);
 
-  self.wss.on('connection', function(ws) {
+  self.wss.on('connect', function(ws) {
     var con = new Connection(ws);
-    self.emit('connection', con);
+    self.emit('connect', con);
 
     var eventIds = ['message', 'request', 'response', 'notification',
       'connect', 'authenticate', 'register', 'select', 'create', 'update', 'delete', 'list',

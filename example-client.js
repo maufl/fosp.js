@@ -13,7 +13,7 @@ var ExampleClient = function() {
   self.client = new fosp.Client({host: self.config.user.domain});
 
   L.info('Starting client');
-  self.client.con.on('open', function() {
+  self.client.on('connect', function() {
     L.info('Established connection');
     L.info('Negotiating version');
     self.client.con.sendConnect({}, {version: "0.1"}).on('failed', function(resp) {
@@ -32,6 +32,17 @@ var ExampleClient = function() {
         self.prompt()
       });
     });
+
+    self.client.con.on('error', function(msg) {
+      console.log();
+      L.error(msg);
+      process.exit(1);
+    });
+    self.client.con.on('close', function() {
+      console.log();
+      L.warn('Connection closed');
+      process.exit(1);
+    });
   });
 
   self.rl.on('line', function(line) {
@@ -44,18 +55,6 @@ var ExampleClient = function() {
     else
       self.emit('unknown-command')
   });
-
-  self.client.con.on('error', function(msg) {
-    console.log();
-    L.error(msg);
-    process.exit(1);
-  });
-  self.client.con.on('close', function() {
-    console.log();
-    L.warn('Connection closed');
-    process.exit(1);
-  });
-
 }
 
 ExampleClient.prototype = Object.create(events.EventEmitter.prototype)

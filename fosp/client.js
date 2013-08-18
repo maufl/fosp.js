@@ -1,6 +1,6 @@
 // fosp client object protoype
 var events = require('events');
-var WebSocket = require('ws');
+var WebSocket = require('websocket');
 var Message = require('./message');
 var Connection = require('./connection');
 
@@ -10,9 +10,14 @@ var Client = function(options) {
     options = {}
   self.port = options.port || 1337;
   self.host = options.host || 'localhost.localdomain';
+  self.con = null
 
-  self.wsc = new WebSocket('ws://' + self.host + ':' + self.port);
-  self.con = new Connection(self.wsc);
+  self.wsc = new WebSocket.client()
+  self.wsc.connect('ws://' + self.host + ':' + self.port);
+  self.wsc.on('connect', function(connection) {
+    self.con = new Connection(connection);
+    self.emit('connect')
+  })
 };
 Client.prototype = Object.create(events.EventEmitter.prototype);
 

@@ -19,17 +19,13 @@ var Connection = function(ws) {
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
     try {
-      var msg = Parser.parseMessage(self, message);
-      L.info('Recieved new message: ' + msg.short());
+      var msg = Parser.parseMessage(self, message.utf8Data);
+      L.debug('Recieved new message: ' + msg.short());
       self.emit('message', msg);
     }
     catch(e) {
       L.error(e.stack);
     }
-  });
-
-  self.ws.on('open', function() {
-    self.emit('open');
   });
 
   self.ws.on('close', function() {
@@ -125,8 +121,8 @@ Connection.prototype.sendMessage = function(msg) {
   var self = this;
   try {
     var raw = msg.serialize();
-    L.info("Send message: " + msg.short());
-    L.debug(raw);
+    L.debug("Send message: " + msg.short());
+    L.verbose(raw);
     this.ws.send(raw);
     if (msg instanceof Request) {
       msg.timeoutHandle = setTimeout(function(){

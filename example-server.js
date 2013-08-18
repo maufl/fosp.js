@@ -12,7 +12,7 @@ var db = new RethinkDB(options.db);
 
 L.info('Sever startet');
 
-server.on('connection', function(con) {
+server.on('connect', function(con) {
   L.info('Recieved a new connection: ' + con.id);
 
   con.on('close', function() {

@@ -12,7 +12,7 @@ var URI = function(string) {
     self.path = '/';
 
   if (! self.user.match(/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9_\-.]+$/)) {
-    L.error('Invalid user: ' + self.user);
+    L.error('Invalid user in uri: ' + string);
     throw new Error("Invalid user");
   }
   i = self.user.indexOf("@");

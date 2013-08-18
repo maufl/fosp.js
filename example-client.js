@@ -1,4 +1,5 @@
 // more or less simple example client
+var events = require('events')
 var readline = require('readline');
 var sprintf = require('sprintf').sprintf;
 var fs = require('fs');
@@ -34,75 +35,14 @@ var ExampleClient = function() {
   });
 
   self.rl.on('line', function(line) {
-    var argv = line.split(' ');
-    var command = argv.shift();
-    switch(command) {
-      case 'cd':
-        if (argv[0]) {
-          self.cd(argv[0]);
-          self.prompt();
-        }
-        else {
-          L.error('Missing argument for cd');
-        }
-        break;
-      case 'pwd':
-        console.log(cwd);
-        break;
-      case 'exit':
-        process.exit(0);
-        break;
-      case 'register':
-        self.register(argv);
-        break;
-      case 'authenticate':
-        self.authenticate(argv);
-        break;
-      case 'select':
-        if (argv[0])
-          self.select(argv[0]);
-        else
-          self.select('.');
-        break;
-      case 'create':
-        if (argv.length < 2) {
-          L.error('To few arguments for create');
-          break;
-        }
-        else {
-          var name = argv.shift();
-          var body = JSON.parse(argv.join(" "));
-          self.create(name, body);
-        }
-        break;
-      case 'update':
-        if (argv.length < 2) {
-          L.error('To few arguments for create');
-          break;
-        }
-        else {
-          var name = argv.shift();
-          var body = JSON.parse(argv.join(" "));
-          self.update(name, body);
-        }
-        break;
-      case 'delete':
-        if (argv[0])
-          self._delete(argv[0]);
-        else
-          self._delete('.');
-        break;
-      case 'list':
-        if (argv[0])
-          self.list(argv[0]);
-        else
-          self.list('.');
-        break;
-      default:
-        L.warn('Unknown command');
-        self.prompt();
-        break;
-    }
+    var params = line.split(' ');
+    var command = params.shift();
+    var validCommands = ['cd','pwd','exit','register','authenticate',
+                         'select','create','update','delete','list'];
+    if (validCommands.indexOf(command) >= 0)
+      self.emit(command, params)
+    else
+      self.emit('unknown-command')
   });
 
   self.client.con.on('error', function(msg) {
@@ -118,12 +58,10 @@ var ExampleClient = function() {
 
 }
 
-ExampleClient.prototype.setPrompt = function() {
-  this.rl.setPrompt(this.config.user.name +'@' + this.config.user.domain + ' on ' + this.config.cwd + '>');
-}
+ExampleClient.prototype = Object.create(events.EventEmitter.prototype)
 
 ExampleClient.prototype.prompt = function() {
-  this.setPrompt();
+  this.rl.setPrompt(this.config.user.name +'@' + this.config.user.domain + ' on ' + this.config.cwd + '>');
   this.rl.prompt();
 }
 
@@ -181,46 +119,103 @@ ExampleClient.prototype.formatResponsePrompt = function(req, succeded, failed, t
   });
 }
 
-
-ExampleClient.prototype.register = function(argv) {
-  this.formatResponsePrompt(this.client.con.sendRegister({}, {name: argv[0], password: argv[1] }));
+ExampleClient.prototype.paramsDefined = function() {
+  for (arg in arguments) {
+    if (typeof arg === 'undefined' || arg === null) {
+      L.error('Missing parameters');
+      return false;
+    }
+  }
+  return true;
 }
 
-ExampleClient.prototype.authenticate = function(argv) {
-  this.formatResponsePrompt(this.client.con.sendAuthenticate({}, { name: argv[0], password: argv[1] }));
-}
-
-ExampleClient.prototype.select = function(arg) {
+ExampleClient.prototype.tmpCd = function(path, func) {
   var oldCwd = this.config.cwd;
-  this.cd(arg);
-  this.formatResponsePrompt(this.client.con.sendSelect(this.config.cwd), "%(resp.body)s")
-  this.config.cwd = oldCwd;
-};
-
-ExampleClient.prototype.create = function(name, body) {
-  var path = this.config.cwd + "/" + name;
-  this.formatResponsePrompt(this.client.con.sendCreate(path, {}, body))
-}
-
-ExampleClient.prototype.update = function(name, body) {
-  var path = this.config.cwd;
-  if (name !== '.')
-    path += '/' + name;
-  this.formatResponsePrompt(this.client.con.sendUpdate(path, {}, body));
-}
-
-ExampleClient.prototype._delete = function(name) {
-  var oldCwd = this.config.cwd;
-  this.cd(name);
-  this.formatResponsePrompt(this.client.con.sendDelete(this.config.cwd));
+  this.cd(path);
+  func.call(this, this.config.cwd);
   this.config.cwd = oldCwd;
 }
 
-ExampleClient.prototype.list = function(name) {
-  var oldCwd = this.config.cwd;
-  this.cd(name);
-  this.formatResponsePrompt(this.client.con.sendList(this.config.cwd), '%(resp.body)s');
-  this.config.cwd = oldCwd;
+ExampleClient.prototype.unariOperation = function(params, func) {
+  var path = params[0];
+  if (typeof path === 'undefined' || path === '')
+    path = '.'
+  this.tmpCd(path, function(dir) {
+    func.call(this, dir);
+  });
 }
 
-new ExampleClient();
+ExampleClient.prototype.userOperation = function(params, func) {
+  var name = params[0], password = params[1];
+  if (! this.paramsDefined(name, password) )
+    return;
+  this.formatResponsePrompt(func(name, password));
+}
+
+var fospClient = new ExampleClient();
+
+fospClient.on('exit', function() {
+  L.info('Exiting')
+  process.exit(0)
+});
+
+fospClient.on('pwd', function() {
+  console.log(this.config.cwd)
+  this.prompt()
+});
+
+fospClient.on('cd', function(params) {
+  var path = params[0];
+  if (this.paramsDefined(path)) {
+    this.cd(path);
+    this.prompt();
+  }
+});
+
+fospClient.on('register', function(params) {
+  this.userOperation(params, function(name, password) {
+    return this.client.con.sendRegister({}, {name: name, password: password });
+  });
+})
+
+fospClient.on('authenticate', function(params) {
+  this.userOperation(params, function(name, password) {
+    return this.client.con.sendAuthenticate({}, { name: name, password: password });
+  });
+})
+
+fospClient.on('select', function(params) {
+  this.unariOperation(params, function(dir) {
+    this.formatResponsePrompt(this.client.con.sendSelect(dir), "%(resp.body)s")
+  });
+});
+
+fospClient.on('delete', function(params) {
+  this.unariOperation(params, function(dir) {
+    this.formatResponsePrompt(this.client.con.sendDelete(dir));
+  });
+})
+
+fospClient.on('list', function(params) {
+  this.unariOperation(params, function(dir) {
+    this.formatResponsePrompt(this.client.con.sendList(dir), '%(resp.body)s');
+  });
+})
+
+fospClient.on('create', function(params) {
+  var path = params.shift(), body = JSON.parse(params.join(' ')), self = this;
+  if (! this.paramsDefined(path, body) )
+    return;
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendCreate(dir, {}, body))
+  });
+})
+
+fospClient.on('update', function(params) {
+  var path = params.shift(), body = JSON.parse(params.join(' ')), self = this;
+  if (! this.paramsDefined(path, body) )
+    return;
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, body));
+  });
+})

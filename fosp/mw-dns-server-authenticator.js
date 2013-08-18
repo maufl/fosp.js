@@ -2,7 +2,6 @@
 var dns = require('dns')
 var Middleware = require('./middleware')
 var L = require('./logger').forFile(__filename)
-L.transports.console.level = 'debug'
 
 var DnsServerAuthenticator = function() {
 }
@@ -32,9 +31,8 @@ DnsServerAuthenticator.prototype.handleAuthenticate = function(msg) {
     else {
       L.info('Successfully authenticated remote server!')
       msg.sendSucceded(200);
+      msg.con.updateContext('server', presented_domain)
       msg.con.authenticated = true;
-      msg.con.type = 'server'
-      msg.con.remote_domain = presented_domain
     }
   })
   return false;

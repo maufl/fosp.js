@@ -3,6 +3,7 @@ var events = require('events')
 var http = require('http')
 var WebSocket = require('websocket');
 var Connection = require('./connection')
+var ConnectionPool = require('./server-connection-pool')
 var ConnectionNegotiator = require('./mw-connection-negotiator');
 var ServerAuthenticator = require('./mw-dns-server-authenticator')
 var L = require('./logger').forFile(__filename);
@@ -12,9 +13,9 @@ var Server = function(options) {
   // Set options
   self.port = options.port || 1337;
   self.local_domain = options.local_domain || 'localhost.localdomain';
-  self.connectionPool = {};
   self.middlewareStack = [];
   // Bootstrap underlying objects
+  self.connectionPool = new ConnectionPool();
   self.httpServer = new http.createServer(function(request, response) {
     L.info('Received http request for ' + request.url);
     response.writeHead(404);
@@ -29,8 +30,10 @@ var Server = function(options) {
   var dsa = new ServerAuthenticator();
   self.middlewareStack.push(dsa);
 
+
   self.wss.on('connect', function(ws) {
     var con = new Connection(ws);
+    self.connectionPool.push(con);
     self.emit('connect', con);
 
     var eventIds = ['message', 'request', 'response', 'notification',

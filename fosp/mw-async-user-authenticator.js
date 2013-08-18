@@ -14,8 +14,7 @@ AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
     L.info('User is authenticated ' + success);
     if (success) {
       msg.sendSucceded(200);
-      msg.con.type = 'client
-      msg.con.remote_user = msg.body.name;
+      msg.con.updateContext('client', msg.body.name)
       msg.con.authenticated = true;
       L.info('Successfully authenticated!');
       return;

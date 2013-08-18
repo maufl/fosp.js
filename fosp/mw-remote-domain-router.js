@@ -1,6 +1,6 @@
 // middleware that routes a request to a remote domain
 var util = require('util');
-var WebSocket = require('ws');
+var WebSocket = require('websocket');
 var Middleware = require('./middleware');
 var Connection = require('./connection');
 var L = require('./logger').forFile(__filename);
@@ -38,7 +38,7 @@ RemoteDomainRouter.prototype.defaultHandler = function(msg) {
 
 RemoteDomainRouter.prototype.withConnection = function(domain, callback) {
   var self = this;
-  var con = self.server.connectionPool[domain];
+  var con = self.server.connectionPool.get(domain);
   if (typeof con === 'object' && con !== null) {
     L.info('Found existing connection to ' + domain);
     callback(null, con);
@@ -47,12 +47,13 @@ RemoteDomainRouter.prototype.withConnection = function(domain, callback) {
     L.info('Did not find a existing connection to ' + domain);
     try {
       L.info('Open new connection to ' + domain);
-      var newWs = new WebSocket('ws://'+domain+':'+self.server.port);
-      var newCon = new Connection(newWs);
-      newCon.on('open', function() {
+      var newWs = new WebSocket.client()
+      newWs.connect('ws://'+domain+':'+self.server.port);
+      newWs.on('connect', function(con) {
+        var newCon = new Connection(con);
+        self.server.connectionPool.push(newCon);
         newCon.sendConnect({}, {version: '0.1'}).on('succeded', function() {
           newCon.sendAuthenticate({}, {type: 'server', domain: self.server.local_domain}).on('succeded', function() {
-            self.server.connectionPool[domain] = newCon;
             callback(null, newCon);
           }).on('failed', function() {
             callback(new Error('Could not authenticate with remote domain'), null);
@@ -61,7 +62,7 @@ RemoteDomainRouter.prototype.withConnection = function(domain, callback) {
           callback(new Error('Could not negotiate with remote domain'), null);
         });
       });
-      newCon.on('error', function(err) {
+      newWs.on('error', function(err) {
         L.warn('Error occured when connecting to remote domain: ' + err);
       });
     }

@@ -5,7 +5,6 @@ var Message = require('./message')
 var Request = require('./request')
 var Parser = require('./parser')
 var helpers = require('./connection-helpers')
-var Context = require('./connection-context')
 var L = require('./logger').forFile(__filename);
 
 var Connection = function(ws) {
@@ -18,8 +17,7 @@ var Connection = function(ws) {
   self.negotiated = false;
   self.authenticated = false;
   self.type = '';
-  self.remote_user = '';
-  self.remote_domain = '';
+  self.remote = '';
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
@@ -142,6 +140,18 @@ Connection.prototype.sendMessage = function(msg) {
     L.error(e.stack);
   }
   return msg;
+}
+
+Connection.prototype.updateContext = function(type, remote) {
+  if ((type === 'server' || type === 'client') && typeof remote === 'string') {
+    this.type = type
+    this.remote = remote
+    L.info('Updated connection context to ' + type + ' : ' + remote)
+    this.emit('context-updated')
+  }
+  else {
+    L.error('updateContext called with invalid arguments: ' + type + ', ' + remote)
+  }
 }
 
 Connection.prototype.close = function() {

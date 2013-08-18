@@ -49,7 +49,8 @@ var ExampleClient = function(configFile) {
     var params = line.split(' ');
     var command = params.shift();
     var validCommands = ['cd','pwd','exit','register','authenticate',
-                         'select','create','update','delete','list'];
+                         'select','create','update','delete','list',
+                         'allow', 'deny'];
     if (validCommands.indexOf(command) >= 0)
       self.emit(command, params)
     else
@@ -70,7 +71,7 @@ ExampleClient.prototype.cd = function(path) {
   for (var i=0; i<dirs.length; i++) {
     var dir = dirs[i];
     if (dir == '..') {
-      var cwdDirs = cwd.split('/');
+      var cwdDirs = this.confi.cwd.split('/');
       if (cwdDirs.length > 1) {
         cwdDirs.pop();
         this.config.cwd = cwdDirs.join('/');
@@ -232,4 +233,46 @@ fospClient.on('update', function(params) {
   self.tmpCd(path, function(dir) {
     self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, {data: body}));
   });
+})
+
+var permissions = ['data-read', 'data-write', 'acl-read', 'acl-write', 'subscriptions-read', 'subscriptions-write', 'children-read', 'children-write', 'children-delete']
+
+fospClient.on('allow', function(params) {
+  var self = this
+  var path = params.shift()
+  var user = this.config.user.name + '@' + this.config.user.domain
+  if (params[params.length - 1].match(/[a-zA-Z][a-zA-Z0-9._\-+]*@[a-zA-Z0-9._\-+]/))
+    user = params.pop()
+  for (var i=0; i<params.length; i++) {
+    if (permissions.indexOf(params[i]) < 0) {
+      L.error(params[i] + ' is not a valid permission')
+      return
+    }
+  }
+  var payload = { acl: {} }
+  payload.acl[user] = params
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, payload))
+  })
+})
+
+fospClient.on('deny', function(params) {
+  var self = this
+  var path = params.shift()
+  var user = this.config.user.name + '@' + this.config.user.domain
+  if (params[params.length -1 ].match(/[a-zA-Z][a-zA-Z0-9._\-+]*@[a-zA-Z0-9._\-+]/))
+    user = params.pop()
+  var perms = []
+  for (var i=0; i<params.length; i++) {
+    if (permissions.indexOf(params[i]) < 0) {
+      L.error(params[i] + ' is not a valid permission')
+      return
+    }
+    perms.push('not-' + params[i])
+  }
+  var payload = { acl: {} }
+  payload.acl[user] = perms
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, payload))
+  })
 })

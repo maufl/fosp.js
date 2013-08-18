@@ -1,5 +1,6 @@
 // do all database stuff here
 var moment = require('moment')
+var extend = require('extend')
 var URI = require('./fosp/uri')
 
 var DatabaseAbstractionLayer = function(dbDriver) {
@@ -157,8 +158,38 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
       callback(err, null)
       return
     }
+    if (content.data)
+      extend(true, node, { data: content.data })
+    if (content.subscriptions)
+      extend(true, node, { subscriptions: content.subscriptions })
+    if (content.acl) {
+      if (node.acl === null || typeof node.acl === 'undefined') {
+        node.acl = content.acl
+      }
+      else {
+        for (user in content.acl) {
+          if (typeof node.acl[user] === 'undefined' || node.acl[user] === null) {
+            node.acl[user] = content.acl[user]
+          }
+          else {
+            var perms = content.acl[user]
+            var existingPerms = node.acl[user]
+            for (var i=0; i<perms.length; i++) {
+              var perm = perms[i]
+              if (existingPerms.indexOf(perm) < 0) {
+                node.acl[user].push(perm)
+                var negated = perm.match('^not-') ? perm.substring(4,perm.length) : 'not-'+perm
+                var index = existingPerms.indexOf(negated)
+                if (index >= 0)
+                  node.acl[user].splice(index,1)
+              }
+            }
+          }
+        }
+      }
+    }
     content.mtime = moment().toISOString()
-    self.dbDriver.updateNode(path, content, callback)
+    self.dbDriver.updateNode(path, node, callback)
   });
 }
 

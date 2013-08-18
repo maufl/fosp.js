@@ -82,8 +82,7 @@ RethinkDB.prototype.updateNode = function(path, content, callback) {
   var uri = new fosp.URI(path);
   self._getNode(path, function(err, node) {
     if (node) {
-      extend(true, node, { content: content });
-      self.db.table(uri.user.name).filter(r.row('path').eq(uri.path)).update(node).run(self.connection, function(err, result) {
+      self.db.table(uri.user.name).filter(r.row('path').eq(uri.path)).update({content: content}).run(self.connection, function(err, result) {
         callback(err)
       });
     }

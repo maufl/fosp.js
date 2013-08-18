@@ -115,7 +115,22 @@ var Connection = function(ws) {
     }
   });
 
-  // TODO on notification
+  self.on('notification', function(msg) {
+    switch(msg.event) {
+      case 'CREATED':
+        self.emit('created', msg)
+        break
+      case 'UPDATED':
+        self.emit('updated', msg)
+        break
+      case 'DELETED':
+        self.emit('deleted', msg)
+        break
+      default:
+        L.warn('Recieved unknown notification: ' + msg.event)
+        break
+    }
+  })
 };
 
 Connection.prototype = Object.create(events.EventEmitter.prototype);

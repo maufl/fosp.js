@@ -43,6 +43,15 @@ var ExampleClient = function(configFile) {
       L.warn('Connection closed');
       process.exit(1);
     });
+    self.client.con.on('created', function(msg) {
+      self.emit('created', msg)
+    })
+    self.client.con.on('updated', function(msg) {
+      self.emit('updated', msg)
+    })
+    self.client.con.on('deleted', function(msg) {
+      self.emit('deleted', msg)
+    })
   });
 
   self.rl.on('line', function(line) {
@@ -50,7 +59,7 @@ var ExampleClient = function(configFile) {
     var command = params.shift();
     var validCommands = ['cd','pwd','exit','register','authenticate',
                          'select','create','update','delete','list',
-                         'allow', 'deny'];
+                         'allow', 'deny', 'subscribe', 'unsubscribe'];
     if (validCommands.indexOf(command) >= 0)
       self.emit(command, params)
     else
@@ -94,7 +103,7 @@ ExampleClient.prototype.cd = function(path) {
     else {
       L.error('Invalid dir ' + dir);
       this.config.cwd = oldCwd;
-      break;
+      `break;
     }
   }
 };
@@ -123,10 +132,7 @@ ExampleClient.prototype.formatResponsePrompt = function(req, succeded, failed, t
     self.prompt();
   });
   req.on('timeout', function(resp) {
-    var vars = { request: req.request,
-                 response_status: resp.status,
-                 response_body: JSON.stringify(resp.body)
-    }
+    var vars = { request: req.request }
     L.warn(sprintf(timeout, vars));
     self.prompt();
   });
@@ -275,4 +281,59 @@ fospClient.on('deny', function(params) {
   self.tmpCd(path, function(dir) {
     self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, payload))
   })
+})
+
+var events = ['created', 'updated', 'deleted']
+
+fospClient.on('subscribe', function(params) {
+  var self = this
+  var user = this.config.user.name + '@' + this.config.user.domain
+  var path = params.shift()
+  var depth = parseInt(params.shift())
+  if (isNaN(depth) || depth < -1) {
+    L.error('No valid depth provided')
+    self.prompt()
+    return
+  }
+  for (var i=0; i<params.length; i++) {
+    if(events.indexOf(params[i]) < 0) {
+      L.error('Invalid event ' + params[i])
+      self.prompt()
+      return
+    }
+  }
+  var payload = { subscriptions: {} }
+  payload.subscriptions[user] = { events: params, depth: depth }
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, payload))
+  })
+})
+
+fospClient.on('unsubscribe', function(params) {
+  var self = this
+  var user = this.config.user.name + '@' + this.config.user.domain
+  var path = params.shift()
+  var payload = { subscriptions: {} }
+  payload.subscriptions[user] = null
+  self.tmpCd(path, function(dir) {
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, payload))
+  })
+})
+
+fospClient.on('created', function(msg) {
+  console.log()
+  console.log(msg.uri + ' has been created: ' + JSON.stringify(msg.body.data))
+  this.prompt()
+})
+
+fospClient.on('updated', function(msg) {
+  console.log()
+  console.log(msg.uri + ' has been updated: ' + JSON.stringify(msg.body.data))
+  this.prompt()
+})
+
+fospClient.on('deleted', function(msg) {
+  console.log()
+  console.log(msg.uri + ' has been deleted')
+  this.prompt()
 })

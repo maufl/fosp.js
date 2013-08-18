@@ -1,7 +1,6 @@
 // Manage connections
 var events = require('events')
 var L = require('./logger').forFile(__filename)
-L.transports.console.level = 'debug'
 
 var ConnectionPool = function() {
   this.connections = []

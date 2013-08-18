@@ -1,13 +1,17 @@
 // do all database stuff here
 var moment = require('moment')
 var extend = require('extend')
+var events = require('events')
 var URI = require('./fosp/uri')
+var L = require('./fosp/logger').forFile(__filename);
+L.transports.console.level = 'debug'
 
 var DatabaseAbstractionLayer = function(dbDriver) {
   var self = this
   self.dbDriver = dbDriver
-
 }
+
+DatabaseAbstractionLayer.prototype = Object.create(events.EventEmitter.prototype)
 
 var isSubset = function(set, subset) {
   for (var i = 0; i<subset.length; i++) {
@@ -46,6 +50,22 @@ var sumPermissions = function(user, nodes) {
     }
   }
   return permissionSum
+}
+
+var effectiveSubscriptions = function(nodes, event) {
+  var users = []
+  for (var i=0; i<nodes.length; i++) {
+    var node = nodes[i]
+    if (typeof node.subscriptions !== 'object' || node.subscriptions === null)
+      continue
+    for (user in node.subscriptions) {
+      var subscription = node.subscriptions[user]
+      if (subscription.events.indexOf(event) >= 0
+          && ( subscription.depth === -1 || subscription.depth >= i))
+        users.push(user)
+    }
+  }
+  return users
 }
 
 // callback gets following parameters: Error, Permissions, Node
@@ -96,7 +116,7 @@ DatabaseAbstractionLayer.prototype.select = function(user, path, callback) {
       result.data = node.data
     if (permissions.indexOf('acl-read') >= 0)
       result.acl = node.acl
-    if (permissions.indexOf('subscription-read') >= 0)
+    if (permissions.indexOf('subscriptions-read') >= 0)
       result.subscriptions = node.subscriptions
     callback(null, result)
   });
@@ -110,6 +130,33 @@ DatabaseAbstractionLayer.prototype.list = function(user, path, callback) {
     else
       self.dbDriver.listChildren(path, callback)
   })
+}
+
+DatabaseAbstractionLayer.prototype.prepareNotifications = function(path, event) {
+  var self = this
+  var usersToNotify = []
+  var fired = false
+  var calculated = false
+  var node = null
+  self.dbDriver.getNodeWithParents(path, function(err, nodes) {
+    if (err) {
+      L.warn('An error occured when trying to determin notifications for created: ' + err)
+      return
+    }
+    node = nodes[nodes.length - 1]
+    usersToNotify = effectiveSubscriptions(nodes, event)
+    L.debug('Notifications for event ' + event + ' on ' + path + ' go to ' + usersToNotify)
+    if (fired)
+      self.emit(event, usersToNotify, path, node)
+    else
+      calculated = true
+  })
+  return { fire: function() {
+    if (calculated)
+      self.emit(event, usersToNotify, path, node)
+    else
+      fired = true
+  } }
 }
 
 DatabaseAbstractionLayer.prototype.create = function(user, path, content, callback) {
@@ -136,6 +183,7 @@ DatabaseAbstractionLayer.prototype.create = function(user, path, content, callba
     content.btime = moment().toISOString()
     content.mtime = moment().toISOString()
     self.dbDriver.setNode(path, content, callback)
+    self.prepareNotifications(path, 'created').fire();
   });
 }
 
@@ -143,7 +191,7 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
   var self = this
   var neededPermissions = []
   for (key in content) {
-    if (['data', 'acl', 'subscription'].indexOf(key) < 0) {
+    if (['data', 'acl', 'subscriptions'].indexOf(key) < 0) {
       var err = new Error('Tried to write to a non standart field');
       err.status_code = 422
       callback(err, null)
@@ -190,6 +238,7 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
     }
     content.mtime = moment().toISOString()
     self.dbDriver.updateNode(path, node, callback)
+    self.prepareNotifications(path, 'updated').fire();
   });
 }
 
@@ -208,10 +257,12 @@ DatabaseAbstractionLayer.prototype.delete = function(user, path, callback) {
       callback(err)
       return
     }
+    var notifications  = self.prepareNotifications(path, 'deleted');
     self.dbDriver.deleteNode(path, function(err) {
       if (err)
         callback(err)
       callback(null)
+      notifications.fire()
     })
   })
 }

@@ -23,7 +23,7 @@ Notification.prototype.serialize = function() {
   if (self.uri)
     uri = self.uri.toString();
 
-  var raw = [self.event, uri].joint(" ") + "\r\n";
+  var raw = [self.event, uri].join(" ") + "\r\n";
 
   for (k in self.headers) {
     raw += k + ": " + self.headers[k] + "\r\n";

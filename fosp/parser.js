@@ -35,6 +35,9 @@ var _parseMessage = function(raw) {
     if (message.type == Message.REQUEST && ['CONNECT', 'REGISTER', 'AUTHENTICATE'].indexOf(message.request) < 0) {
       message.uri = new URI(main[1]);
     }
+    else if (message.type === Message.NOTIFICATION) {
+      message.uri = new URI(main[1]);
+    }
     else {
       message.uri = null;
     }

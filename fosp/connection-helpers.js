@@ -42,14 +42,25 @@ helpers.sendList = function(uri, headers, body) {
 }
 
 // Convinience for notifications, not really need atm
-helpers.sendNotification = function(event, uri, seq, headers, body) {
+helpers.sendNotification = function(event, uri, headers, body) {
   if (typeof headers === 'undefined')
     headers = {}
   if (typeof body === 'undefined')
     body = null
-  var msg = new Notification(this, { type: Message.NOTIFICATION, event: event, uri: uri, seq: seq, headers: headers, body: body });
+  if (typeof uri === 'string')
+    uri = new URI(uri);
+  var msg = new Notification(this, { type: Message.NOTIFICATION, event: event, uri: uri, headers: headers, body: body });
   return this.sendMessage(msg);
 }
-// TODO
+
+helpers.sendCreated = function(uri, headers, body) {
+  return this.sendNotification('CREATED', uri, headers, body);
+}
+helpers.sendUpdated = function(uri, headers, body) {
+  return this.sendNotification('UPDATED', uri, headers, body);
+}
+helpers.sendDeleted = function(uri, headers, body) {
+  return this.sendNotification('DELETED', uri, headers, body);
+}
 
 module.exports = helpers

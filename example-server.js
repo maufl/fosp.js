@@ -68,6 +68,16 @@ server.on('create', function(con, req) {
       req.sendSucceded(201);
   });
 });
+db.on('created', function(users, path, node) {
+  L.info(path + ' was created, following users should be notified: ' + users)
+  for (var i=0; i < users.length; i++) {
+    var user = users[i]
+    var name = user.substring(0, user.indexOf('@'))
+    var con = server.connectionPool.get(name)
+    if (con)
+      con.sendCreated(path, {}, node)
+  }
+})
 server.on('update', function(con, req) {
   db.update(getUser(req), req.uri.toString(), req.body, function(err, result) {
     if (err)
@@ -76,6 +86,16 @@ server.on('update', function(con, req) {
       req.sendSucceded(204);
   });
 });
+db.on('updated', function(users, path, node) {
+  L.info(path + ' was updated, following users should be notified: ' + users)
+  for (var i=0; i < users.length; i++) {
+    var user = users[i]
+    var name = user.substring(0, user.indexOf('@'))
+    var con = server.connectionPool.get(name)
+    if (con)
+      con.sendUpdated(path, {}, node)
+  }
+})
 server.on('delete', function(con, req) {
   db.delete(getUser(req), req.uri.toString(), function(err) {
     if (err)
@@ -84,6 +104,16 @@ server.on('delete', function(con, req) {
       req.sendSucceded(204);
   });
 });
+db.on('deleted', function(users, path, node) {
+  L.info(path + ' was deleted, following users should be notified: ' + users)
+  for (var i=0; i < users.length; i++) {
+    var user = users[i]
+    var name = user.substring(0, user.indexOf('@'))
+    var con = server.connectionPool.get(name)
+    if (con)
+      con.sendDeleted(path)
+  }
+})
 server.on('list', function(con, req) {
   db.list(getUser(req), req.uri.toString(), function(err, children) {
     if (err)

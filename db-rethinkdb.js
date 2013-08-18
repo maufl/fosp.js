@@ -1,6 +1,7 @@
 // DB layer
 var r = require('rethinkdb');
 var extend = require('extend');
+var moment = require('moment')
 var fosp = require('./fosp');
 var L = require('./fosp/logger').forFile(__filename);
 
@@ -110,11 +111,11 @@ RethinkDB.prototype.listChildren = function(path, callback) {
     path = ''
   self.db.table(uri.user.name).filter(r.row('path').match('^'+path+'/[^/]+$')).run(self.connection, function(err, cursor) {
     if (err)
-      callback(err, null)
+      callback(new Error('Database error'), null)
     else
       cursor.toArray(function(err, result) {
         if (err) {
-          callback(err, null);
+          callback(new Error('Database error'), null);
         } else {
           var children = []
           for (var i=0; i< result.length; i++) {
@@ -128,13 +129,25 @@ RethinkDB.prototype.listChildren = function(path, callback) {
 }
 
 
-RethinkDB.prototype.getAllNodes = function(path, callback) {
+RethinkDB.prototype.getNodeWithParents = function(path, callback) {
   var self = this;
   var uri = new fosp.URI(path);
   var path = uri.path;
   if (path === "")
-    path = ""
-  self.db.table(uri.user.name).filter(function(node) { return r.expr('^'+path).match(node('path')); }).run(self.connection, callback);
+    path = "/"
+  self.db.table(uri.user.name).filter(r.js('(function(node) { return "' + path +'".match("^"+node.path); })')).orderBy('path').map(function(node){return node('content')}).run(self.connection, function(err, cursor){
+    if (err) {
+      callback(new Error('Database error'), null)
+    }
+    else {
+      cursor.toArray(function(err, array) {
+        if (err)
+          callback(new Error('Database error'), null)
+        else
+          callback(null, array)
+      });
+    }
+  });
 }
 
 RethinkDB.prototype.isUser = function(name, callback) {
@@ -147,7 +160,7 @@ RethinkDB.prototype.isUser = function(name, callback) {
   });
 }
 
-RethinkDB.prototype.addUser = function(name, password, callback) {
+RethinkDB.prototype.addUser = function(name, domain, password, callback) {
   var self = this;
   self.isUser(name, function(exists) {
     if (exists) {
@@ -159,7 +172,9 @@ RethinkDB.prototype.addUser = function(name, password, callback) {
         callback(err);
         return;
       }
-      self.db.table(name).insert({path: '/', content: 'Welcome home'}).run(self.connection, function(err, result) {
+      var node = { path: '/', content: { owner: name+'@'+domain, btime: moment().toISOString(), mtime: moment().toISOString(), acl: {}, data: "Welcome home" } }
+      node.content.acl[name+'@'+domain] = ['data-read', 'data-write', 'acl-read', 'acl-write', 'subscriptions-read', 'subscriptions-write', 'children-read', 'children-write', 'children-delete']
+      self.db.table(name).insert(node).run(self.connection, function(err, result) {
         if (err) {
           callback(err);
           return;

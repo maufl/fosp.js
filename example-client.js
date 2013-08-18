@@ -6,9 +6,9 @@ var fs = require('fs');
 var fosp = require('./fosp');
 var L = require('./fosp/logger').forFile(__filename);
 
-var ExampleClient = function() {
+var ExampleClient = function(configFile) {
   var self = this;
-  self.config = JSON.parse(fs.readFileSync('client.conf'));
+  self.config = JSON.parse(fs.readFileSync(configFile || 'client.conf'));
   self.rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   self.client = new fosp.Client({host: self.config.user.domain});
 
@@ -100,20 +100,33 @@ ExampleClient.prototype.cd = function(path) {
 
 ExampleClient.prototype.formatResponsePrompt = function(req, succeded, failed, timeout) {
   var self = this;
-  succeded = (typeof succeded === 'string') ? succeded : "Request %(req.request)s was successful: %(resp.body)s";
-  failed = (typeof failed === 'string') ? failed : "Request %(req.request)s failed: %(resp.status)s :: %(resp.body)s";
-  timeout = (typeof timeout === 'string') ? timeout : "Request %(req.request)s timed out";
+  succeded = (typeof succeded === 'string') ? succeded : "Request %(request)s was successful: %(response_body)s";
+  failed = (typeof failed === 'string') ? failed : "Request %(request)s failed: %(response_status)s :: %(response_body)s";
+  timeout = (typeof timeout === 'string') ? timeout : "Request %(request)s timed out";
+
 
   req.on('succeded', function(resp) {
-    console.log(sprintf(succeded, {req: req, resp: resp}));
+    var vars = { request: req.request,
+                 response_status: resp.status,
+                 response_body: JSON.stringify(resp.body)
+    }
+    console.log(sprintf(succeded, vars));
     self.prompt();
   });
   req.on('failed', function(resp) {
-    L.warn(sprintf(failed, {req: req, resp: resp}));
+    var vars = { request: req.request,
+                 response_status: resp.status,
+                 response_body: JSON.stringify(resp.body)
+    }
+    L.warn(sprintf(failed, vars));
     self.prompt();
   });
   req.on('timeout', function(resp) {
-    L.warn(sprintf(timeout, {req: req, resp: resp}));
+    var vars = { request: req.request,
+                 response_status: resp.status,
+                 response_body: JSON.stringify(resp.body)
+    }
+    L.warn(sprintf(timeout, vars));
     self.prompt();
   });
 }
@@ -151,7 +164,7 @@ ExampleClient.prototype.userOperation = function(params, func) {
   this.formatResponsePrompt(func(name, password));
 }
 
-var fospClient = new ExampleClient();
+var fospClient = new ExampleClient(process.argv[2]);
 
 fospClient.on('exit', function() {
   L.info('Exiting')
@@ -172,20 +185,22 @@ fospClient.on('cd', function(params) {
 });
 
 fospClient.on('register', function(params) {
+  var self = this
   this.userOperation(params, function(name, password) {
-    return this.client.con.sendRegister({}, {name: name, password: password });
+    return self.client.con.sendRegister({}, {name: name, password: password });
   });
 })
 
 fospClient.on('authenticate', function(params) {
+  var self = this
   this.userOperation(params, function(name, password) {
-    return this.client.con.sendAuthenticate({}, { name: name, password: password });
+    return self.client.con.sendAuthenticate({}, { name: name, password: password });
   });
 })
 
 fospClient.on('select', function(params) {
   this.unariOperation(params, function(dir) {
-    this.formatResponsePrompt(this.client.con.sendSelect(dir), "%(resp.body)s")
+    this.formatResponsePrompt(this.client.con.sendSelect(dir), "%(response_body)s")
   });
 });
 
@@ -197,7 +212,7 @@ fospClient.on('delete', function(params) {
 
 fospClient.on('list', function(params) {
   this.unariOperation(params, function(dir) {
-    this.formatResponsePrompt(this.client.con.sendList(dir), '%(resp.body)s');
+    this.formatResponsePrompt(this.client.con.sendList(dir), '%(response_body)s');
   });
 })
 
@@ -206,7 +221,7 @@ fospClient.on('create', function(params) {
   if (! this.paramsDefined(path, body) )
     return;
   self.tmpCd(path, function(dir) {
-    self.formatResponsePrompt(self.client.con.sendCreate(dir, {}, body))
+    self.formatResponsePrompt(self.client.con.sendCreate(dir, {}, {data: body}))
   });
 })
 
@@ -215,6 +230,6 @@ fospClient.on('update', function(params) {
   if (! this.paramsDefined(path, body) )
     return;
   self.tmpCd(path, function(dir) {
-    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, body));
+    self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, {data: body}));
   });
 })

@@ -1,5 +1,6 @@
 // middleware that routes a request to a remote domain
 var util = require('util');
+var extend = require('extend');
 var WebSocket = require('websocket');
 var Middleware = require('./middleware');
 var Connection = require('./connection');
@@ -17,12 +18,12 @@ RemoteDomainRouter.prototype.handleRequest = function(req) {
     L.info('Routing request to correct domain: ' + req.short());
     this.withConnection(req.uri.user.domain, function(err, con) {
       if (err)
-        req.sendFailed(410, {}, err.toString());
+        req.sendFailed(502, {}, err.toString());
       else
-        con.sendRequest(req.request, req.uri.toString(), req.headers, req.body).on('response', function(resp) {
+        con.sendRequest(req.request, req.uri.toString(), extend(true, req.headers, { User: req.con.remote }), req.body).on('response', function(resp) {
           req.sendResponse(resp.response,resp.status, resp.headers, resp.body);
         }).on('timeout', function() {
-          req.sendFailed(450);
+          req.sendFailed(504);
         });
     });
     return false;

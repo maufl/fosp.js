@@ -25,5 +25,17 @@ URI.prototype.toString = function() {
 URI.prototype.fqUser = function() {
   return this.user.name + "@" + this.user.domain;
 }
+URI.prototype.parent = function() {
+  var self = this
+  if (self.isRoot())
+    return self
+  var pathArray = self.path.split('/')
+  pathArray.pop()
+  return new URI(self.fqUser() + pathArray.join('/'))
+}
+
+URI.prototype.isRoot = function() {
+  return this.path === '/'
+}
 
 module.exports = URI;

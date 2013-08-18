@@ -16,7 +16,8 @@
     "extend": "*",
     "winston": "*",
     "sprintf": "*",
-    "rethinkdb": "*"
+    "rethinkdb": "*",
+    "moment": "*"
   },
   "license": "MIT",
   "engines": {

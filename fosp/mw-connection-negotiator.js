@@ -11,7 +11,7 @@ ConnectionNegotiator.prototype = Object.create(Middleware.prototype)
 ConnectionNegotiator.prototype.handleConnect = function(msg) {
   if (msg.body.version === this.version) {
     msg.sendSucceded(100);
-    msg.con.ctx.negotiated = true;
+    msg.con.negotiated = true;
     L.info('Connection successfully negotiated');
     return true;
   }
@@ -21,11 +21,11 @@ ConnectionNegotiator.prototype.handleConnect = function(msg) {
 }
 
 ConnectionNegotiator.prototype.defaultHandler = function(msg) {
-  return msg.con.ctx.negotiated;
+  return msg.con.negotiated;
 }
 
 ConnectionNegotiator.prototype.handleRequest = function(msg) {
-  if (!msg.con.ctx.negotiated) {
+  if (!msg.con.negotiated) {
     msg.sendFailed(500);
     return false;
   }
@@ -33,7 +33,7 @@ ConnectionNegotiator.prototype.handleRequest = function(msg) {
 }
 
 ConnectionNegotiator.prototype.handleResponse = function(msg) {
-  if (!msg.con.ctx.negotiated) {
+  if (!msg.con.negotiated) {
     msg.con.close();
     return false;
   }

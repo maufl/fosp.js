@@ -57,20 +57,4 @@ var Server = function(options) {
 };
 Server.prototype = Object.create(events.EventEmitter.prototype);
 
-Server.prototype.delegateRequest = function(req) {
-  var domain = req.uri.domain;
-  if (domain === '')
-    throw new Error('Tried to delegate to an empty domain');
-  if (domain === self.local_domain)
-    throw new Error('Tried to delegeta request for own domain');
-
-  if (typeof connectionPool[domain] === 'undefined' || connectionPool[domain] === null) {
-    var newWs = new WebSocket('ws://'+domain+':'+self.port);
-    var newConnection = new Connection(ws);
-    newConnection.on('open', function() {
-      newConnection.sendConnect({}, {version:"0.1"});
-    });
-  }
-}
-
 module.exports = Server;

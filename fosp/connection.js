@@ -12,9 +12,14 @@ var Connection = function(ws) {
   var self = this;
   self.ws = ws;
   self.id = Math.floor(Math.random() * 10001);
-  self.ctx = new Context();
   self.currentSeq = 1;
   self.pendingRequests = {};
+  
+  self.negotiated = false;
+  self.authenticated = false;
+  self.type = '';
+  self.remote_user = '';
+  self.remote_domain = '';
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {

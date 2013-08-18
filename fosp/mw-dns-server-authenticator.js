@@ -32,7 +32,9 @@ DnsServerAuthenticator.prototype.handleAuthenticate = function(msg) {
     else {
       L.info('Successfully authenticated remote server!')
       msg.sendSucceded(200);
-      msg.con.ctx.authenticated = true;
+      msg.con.authenticated = true;
+      msg.con.type = 'server'
+      msg.con.remote_domain = presented_domain
     }
   })
   return false;

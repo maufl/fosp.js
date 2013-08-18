@@ -14,7 +14,9 @@ AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
     L.info('User is authenticated ' + success);
     if (success) {
       msg.sendSucceded(200);
-      msg.con.ctx.authenticated = true;
+      msg.con.type = 'client
+      msg.con.remote_user = msg.body.name;
+      msg.con.authenticated = true;
       L.info('Successfully authenticated!');
       return;
     }
@@ -34,7 +36,7 @@ AsyncAuthenticator.prototype.handleConnection = function(msg) {
 }
 
 AsyncAuthenticator.prototype.defaultHandler = function(msg) {
-  return msg.con.ctx.authenticated;
+  return msg.con.authenticated;
 }
 
 module.exports = AsyncAuthenticator;

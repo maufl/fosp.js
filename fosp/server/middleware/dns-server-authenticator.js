@@ -1,7 +1,7 @@
 // authenticator that uses dns lookups to authenticate a server
 var dns = require('dns')
-var Middleware = require('./middleware')
-var L = require('./logger').forFile(__filename)
+var Middleware = require('../middleware')
+var L = require('../../logger').forFile(__filename)
 
 var DnsServerAuthenticator = function() {
 }

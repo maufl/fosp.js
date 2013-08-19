@@ -1,6 +1,6 @@
 // Manage connections
 var events = require('events')
-var L = require('./logger').forFile(__filename)
+var L = require('../logger').forFile(__filename)
 
 var ConnectionPool = function() {
   this.connections = []

@@ -1,6 +1,6 @@
 // middleware that negotiates the connection
-var Middleware = require('./middleware')
-var L = require('./logger').forFile(__filename);
+var Middleware = require('../middleware')
+var L = require('../../logger').forFile(__filename);
 
 var ConnectionNegotiator = function(version) {
   this.version = version;

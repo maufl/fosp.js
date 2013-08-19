@@ -3,9 +3,9 @@ var events = require('events')
 var http = require('http')
 var WebSocket = require('websocket');
 var Connection = require('./connection')
-var ConnectionPool = require('./server-connection-pool')
-var ConnectionNegotiator = require('./mw-connection-negotiator');
-var ServerAuthenticator = require('./mw-dns-server-authenticator')
+var ConnectionPool = require('./server/connection-pool')
+var ConnectionNegotiator = require('./server/middleware/connection-negotiator');
+var ServerAuthenticator = require('./server/middleware/dns-server-authenticator')
 var L = require('./logger').forFile(__filename);
 
 var Server = function(options) {

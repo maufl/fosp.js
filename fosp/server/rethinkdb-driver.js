@@ -2,8 +2,8 @@
 var r = require('rethinkdb');
 var extend = require('extend');
 var moment = require('moment')
-var fosp = require('./fosp');
-var L = require('./fosp/logger').forFile(__filename);
+var fosp = require('../../fosp');
+var L = require('../logger').forFile(__filename);
 
 var RethinkDB = function(options) {
   var self = this;

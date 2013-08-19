@@ -1,6 +1,6 @@
 // generic connection authenticator
-var Middleware = require('./middleware')
-var L = require('./logger').forFile(__filename);
+var Middleware = require('../middleware')
+var L = require('../../logger').forFile(__filename);
 
 var AsyncAuthenticator = function(authFunc) {
   this.authFunc = authFunc;

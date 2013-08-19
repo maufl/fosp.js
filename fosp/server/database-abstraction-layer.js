@@ -2,8 +2,8 @@
 var moment = require('moment')
 var extend = require('extend')
 var events = require('events')
-var URI = require('./fosp/uri')
-var L = require('./fosp/logger').forFile(__filename);
+var URI = require('../uri')
+var L = require('../logger').forFile(__filename);
 L.transports.console.level = 'debug'
 
 var DatabaseAbstractionLayer = function(dbDriver) {

@@ -2,9 +2,9 @@
 var util = require('util');
 var extend = require('extend');
 var WebSocket = require('websocket');
-var Middleware = require('./middleware');
-var Connection = require('./connection');
-var L = require('./logger').forFile(__filename);
+var Middleware = require('../middleware');
+var Connection = require('../../connection');
+var L = require('../../logger').forFile(__filename);
 
 var RemoteDomainRouter = function(server) {
   this.server = server;

@@ -1,10 +1,10 @@
 //var r = require('rethinkdb');
 var fs = require('fs');
 var fosp = require('./fosp');
-var AuthenticatorMiddleware = require('./fosp/mw-async-user-authenticator');
-var RemoteDomainRouter = require('./fosp/mw-remote-domain-router');
-var RethinkDB = require('./db-rethinkdb');
-var DatabaseAbstractionLayer = require('./database-abstraction-layer');
+var AuthenticatorMiddleware = require('./fosp/server/middleware/async-user-authenticator');
+var RemoteDomainRouter = require('./fosp/server/middleware/remote-domain-router');
+var RethinkDB = require('./fosp/server/rethinkdb-driver');
+var DatabaseAbstractionLayer = require('./fosp/server/database-abstraction-layer');
 var L = require('./fosp/logger').forFile(__filename);
 
 var options = JSON.parse(fs.readFileSync('server.conf'));

@@ -103,7 +103,7 @@ ExampleClient.prototype.cd = function(path) {
     else {
       L.error('Invalid dir ' + dir);
       this.config.cwd = oldCwd;
-      `break;
+      break;
     }
   }
 };

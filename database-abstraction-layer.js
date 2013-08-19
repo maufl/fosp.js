@@ -137,7 +137,6 @@ DatabaseAbstractionLayer.prototype.prepareNotifications = function(path, event) 
   var usersToNotify = []
   var fired = false
   var calculated = false
-  var node = null
   self.dbDriver.getNodeWithParents(path, function(err, nodes) {
     if (err) {
       L.warn('An error occured when trying to determin notifications for created: ' + err)
@@ -147,13 +146,13 @@ DatabaseAbstractionLayer.prototype.prepareNotifications = function(path, event) 
     usersToNotify = effectiveSubscriptions(nodes, event)
     L.debug('Notifications for event ' + event + ' on ' + path + ' go to ' + usersToNotify)
     if (fired)
-      self.emit(event, usersToNotify, path, node)
+      self.emit(event, usersToNotify, path)
     else
       calculated = true
   })
   return { fire: function() {
     if (calculated)
-      self.emit(event, usersToNotify, path, node)
+      self.emit(event, usersToNotify, path)
     else
       fired = true
   } }

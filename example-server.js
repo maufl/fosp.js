@@ -68,14 +68,26 @@ server.on('create', function(con, req) {
       req.sendSucceded(201);
   });
 });
-db.on('created', function(users, path, node) {
+db.on('created', function(users, path) {
   L.info(path + ' was created, following users should be notified: ' + users)
   for (var i=0; i < users.length; i++) {
     var user = users[i]
-    var name = user.substring(0, user.indexOf('@'))
-    var con = server.connectionPool.get(name)
-    if (con)
-      con.sendCreated(path, {}, node)
+    db.select(user, path, function(err, node) {
+      if (err)
+        return
+      var name = user.substring(0, user.indexOf('@'))
+      var domain = user.substring(user.indexOf('@') + 1, user.length)
+      if (domain === server.local_domain) {
+        var con = server.connectionPool.get(name)
+        if (con)
+          con.sendCreated(path, {}, node)
+      }
+      else {
+        var con = server.connectionPool.get(domain)
+        if (con)
+          con.sendCreated(path, {User: name}, node)
+      }
+    })
   }
 })
 server.on('update', function(con, req) {
@@ -90,10 +102,25 @@ db.on('updated', function(users, path, node) {
   L.info(path + ' was updated, following users should be notified: ' + users)
   for (var i=0; i < users.length; i++) {
     var user = users[i]
-    var name = user.substring(0, user.indexOf('@'))
-    var con = server.connectionPool.get(name)
-    if (con)
-      con.sendUpdated(path, {}, node)
+    db.select(user, path, function(err, node) {
+      if (err) {
+        L.warn('Error occured when fetching node for update event: ' + err)
+        return
+      }
+      var name = user.substring(0, user.indexOf('@'))
+      var domain = user.substring(user.indexOf('@') + 1, user.length)
+      L.info('Send update message to user ' + name + ' on ' + domain)
+      if (domain === server.local_domain) {
+        var con = server.connectionPool.get(name)
+        if (con)
+          con.sendUpdated(path, {}, node)
+      }
+      else {
+        var con = server.connectionPool.get(domain)
+        if (con)
+          con.sendUpdated(path, {User: name}, node)
+      }
+    })
   }
 })
 server.on('delete', function(con, req) {
@@ -104,14 +131,22 @@ server.on('delete', function(con, req) {
       req.sendSucceded(204);
   });
 });
-db.on('deleted', function(users, path, node) {
+db.on('deleted', function(users, path) {
   L.info(path + ' was deleted, following users should be notified: ' + users)
   for (var i=0; i < users.length; i++) {
     var user = users[i]
     var name = user.substring(0, user.indexOf('@'))
-    var con = server.connectionPool.get(name)
-    if (con)
-      con.sendDeleted(path)
+    var domain = user.substring(user.indexOf('@') + 1, user.length)
+    if (domain === server.local_domain) {
+      var con = server.connectionPool.get(name)
+      if (con)
+        con.sendDeleted(path)
+    }
+    else {
+      var con = server.connectionPool.get(domain)
+      if (con)
+        con.sendDeleted(path, {User: name})
+    }
   }
 })
 server.on('list', function(con, req) {

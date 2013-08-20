@@ -164,8 +164,8 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
         require('./logger').forFile(__filename));
 }
 else if (typeof define === 'function' && define.amd) {
-  define(['events', './uri', './message', './request', './parser', './logger'], function(events, URI, Message, Request, Parser, logger) {
-    return buildModule(events, URI, Message, Request, Parser, logger.forFile('fosp/notification'));
+  define(['EventEmitter', './uri', './message', './request', './parser', './logger'], function(EventEmitter, URI, Message, Request, Parser, logger) {
+    return buildModule({EventEmitter: EventEmitter}, URI, Message, Request, Parser, logger.forFile('fosp/notification'));
   })
 }
 })();

@@ -103,7 +103,7 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
         require('./logger').forFile(__filename));
 }
 else if (typeof define === 'function' && define.amd) {
-  define(['./uri', './message', './request', './response', './notification', './logger'], function(URI, Message, Request, Pesponse, Notification, logger) {
+  define(['./uri', './message', './request', './response', './notification', './logger'], function(URI, Message, Request, Response, Notification, logger) {
     return buildModule(URI, Message, Request, Response, Notification, logger.forFile('fosp/parser'));
   })
 }

@@ -43,8 +43,8 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
   module.exports = buildModule(require('events'), require('extend'));
 }
 else if (typeof define === 'function' && define.amd) {
-  define(['events','jquery'], function(events, jquery) {
-    return buildModule(events, jquery.extend);
+  define(['EventEmitter','jquery'], function(EventEmitter, jquery) {
+    return buildModule({EventEmitter: EventEmitter}, jquery.extend);
   })
 }
 })();

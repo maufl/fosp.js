@@ -44,7 +44,7 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
   module.exports = buildModule(require('./logger').forFile(__filename));
 }
 else if (typeof define === 'function' && define.amd) {
-  define(['./logger'], function(Message, logger) {
+  define(['./logger'], function(logger) {
     return buildModule(logger.forFile('fosp/uri'));
   })
 }

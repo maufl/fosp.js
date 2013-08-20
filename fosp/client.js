@@ -25,8 +25,8 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
   module.exports = buildModule(require('events'), require('websocket'), require('./message'), require('./connection'));
 }
 else if (typeof define === 'function' && define.amd) {
-  define(['events','./message','./connection'], function(events, Message, Connection) {
-    return buildModule(events, WebSocket, Message, Connection);
+  define(['EventEmitter','./message','./connection'], function(EventEmitter, Message, Connection) {
+    return buildModule({EventEmitter : EventEmitter}, WebSocket, Message, Connection);
   })
 }
 })();

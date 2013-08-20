@@ -1,38 +1,6 @@
 // Everything message related
 var events = require('events');
-
-/* Message format
- * REQUEST := REQUEST_TYPE + " " + RESOURCE_IDENTIFIER + " " + SEQUENCE_NUMBER\r\n
- *            HEADERS\r\n
- *            \r\n
- *            BODY
- * REQUEST_TYPE := CONNECT || AUTHENTICATE || REGISTER || CREATE || UPDATE || DELETE || SELECT
- *
- * RESPONSE := RESPONSE_TYPE + " " + RESONSE_STATUS + " " SEQUENCE_NUMBER\r\n
- *             HEADERS\r\n
- *             \r\n
- *             BODY
- * RESPONSE_TYPE := SUCCEDED || FAILED
- *
- * NOTIFICATION := EVENT_TYPE + " " + RESOURCE_IDENTIFIER\r\n
- *                 HEADERS\r\n
- *                 \r\n
- *                 BODY
- * EVENT_TYPE := CREATED || UPDATED || DELETED
- *
- * RESOURCE_IDENTIFIER := USERNAME + "@" + DOMAIN + PATH
- * USERNAME := [a-z][a-z0-9_\-.]*
- * DOMAIN := DOMAIN_PART ( + "." + DOMAIN_PART)*
- * DOMAIN_PART := [a-z][a-z0-9_\-+]*
- * PATH := (/ + PATH_FRAGMENT)*
- * PATH_FRAGMENT := [a-z][a-z0-9\-_+]*
- *
- * HEADERS := "" || (HEADER\r\n
- *                  HEADERS)
- * HEADER  := HEADER_KEY + ": " + HEADER_VALUE
- * HEADER_KEY := [A-Z] + [a-zA-Z\-_]*
- * HEADER_VALUE := [A-Z] + [a-zA-Z\-_/]*
- */
+var extend = require('extend');
 
 var REQUESTS = ["CONNECT", "AUTHENTICATE", "REGISTER", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];
 var RESPONSES = ["SUCCEDED", "FAILED"];
@@ -44,7 +12,12 @@ var NOTIFICATION = 3;
 
 // Actuall message class definition
 
-var Message = function() {
+var Message = function(con, msg) {
+  this.con = con
+  extend(true,this,msg)
+  // Set default values for headers and body
+  this.headers = typeof this.headers === 'undefined' ? {} : this.headers
+  this.body = typeof this.body === 'undefined'? null : this.body
 }
 
 Message.REQUESTS = REQUESTS;
@@ -56,6 +29,19 @@ Message.NOTIFICATION = NOTIFICATION;
 
 Message.prototype = Object.create(events.EventEmitter.prototype);
 
+Message.prototype.serializeHeaders = function() {
+  var raw = ''
+  for (k in this.headers) {
+    raw += k + ": " + this.headers[k] + "\r\n";
+  }
+  return raw;
+}
+
+Message.prototype.serializeBody = function() {
+  if (typeof this.body !== 'undefined' && this.body !== null)
+    return "\r\n" + JSON.stringify(this.body);
+  return '';
+}
 
 Message.prototype.toString = function() {
   return this.short() + ' :: ' + JSON.stringify(this.body);

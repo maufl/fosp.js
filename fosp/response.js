@@ -1,66 +1,40 @@
 // Response class
-var extend = require('extend');
 var Message = require('./message');
 var L = require('./logger').forFile(__filename);
 
 var Response = function(con, msg) {
-  var self = this;
-  self.con = con;
-
-  extend(true, self, msg);
+  Message.call(this,con,msg)
 }
 
 Response.prototype = Object.create(Message.prototype);
 
 Response.prototype.serialize = function() {
-  var self = this
   L.debug("Serializing message");
-  var err = self.validate();
-  if (err)
-    throw err;
+  this.validate();
 
-  var uri = '*';
-  if (self.uri)
-    uri = self.uri.toString();
+  return [this.response, this.status, this.seq].join(" ") + "\r\n"
+          + this.serializeHeaders()
+          + this.serializeBody();
 
-  var raw = [self.response, self.status, self.seq].join(" ") + "\r\n";
-
-  for (k in self.headers) {
-    raw += k + ": " + self.headers[k] + "\r\n";
-  }
-
-  if (typeof self.body !== 'undefined' && self.body !== null)
-    raw += "\r\n" + JSON.stringify(self.body);
-
-  return raw;
 };
 
 Response.prototype.validate = function() {
-  var self = this;
-  // Sanitize message
-  if (typeof self.headers === 'undefined') {
-    self.headers = {};
-  }
-  if (typeof self.body === 'undefined') {
-    self.body = null;
-  }
   // Sanity check of message
-  if (self.type !== Message.RESPONSE) {
-    return Error("This response is no response!");
+  if (this.type !== Message.RESPONSE) {
+    throw new Error("This response is no response!");
   }
-  if (typeof(self.response) !== "string" || Message.RESPONSES.indexOf(self.response) < 0) {
-    return Error("Unknown response" + self.response);
+  if (typeof(this.response) !== "string" || Message.RESPONSES.indexOf(this.response) < 0) {
+    throw new Error("Unknown response" + this.response);
   }
-  if (typeof(self.status) !== "number" || self.status <= 0) {
-    return Error("Unknown response status: " + self.status);
+  if (typeof(this.status) !== "number" || this.status <= 0) {
+    throw new Error("Unknown response status: " + this.status);
   }
-  if (typeof self.seq !== 'number' || self.seq <= 0) {
-    return Error("Missing request sequence number: " + self.seq);
+  if (typeof this.seq !== 'number' || this.seq <= 0) {
+    throw new Error("Missing request sequence number: " + this.seq);
   }
-  if (typeof(self.headers) !== 'object') {
-    return Error("Invalid headers object: " + self.headers);
+  if (typeof(this.headers) !== 'object') {
+    throw new Error("Invalid headers object: " + this.headers);
   }
-  return null;
 };
 
 Response.prototype.short = function() {

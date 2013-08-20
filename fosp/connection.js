@@ -1,10 +1,9 @@
 // This object type models a fosp connection
 var events = require('events')
-var extend = require('extend')
+var URI = require('./uri')
 var Message = require('./message')
 var Request = require('./request')
 var Parser = require('./parser')
-var helpers = require('./connection-helpers')
 var L = require('./logger').forFile(__filename);
 
 var Connection = function(ws) {
@@ -13,11 +12,6 @@ var Connection = function(ws) {
   self.id = Math.floor(Math.random() * 10001);
   self.currentSeq = 1;
   self.pendingRequests = {};
-  
-  self.negotiated = false;
-  self.authenticated = false;
-  self.type = '';
-  self.remote = '';
 
   // Emit message events on new messages, and also more specific events
   self.ws.on('message', function(message) {
@@ -52,38 +46,6 @@ var Connection = function(ws) {
         break;
       default:
         L.warn('Recieved unknow type of message: ' + msg.type)
-        break;
-    }
-  });
-
-  self.on('request', function(msg) {
-    switch(msg.request) {
-      case 'CONNECT':
-        self.emit('connect', msg);
-        break;
-      case 'REGISTER':
-        self.emit('register', msg);
-        break;
-      case 'AUTHENTICATE':
-        self.emit('authenticate', msg);
-        break;
-      case 'SELECT':
-        self.emit('select', msg);
-        break;
-      case 'CREATE':
-        self.emit('create', msg);
-        break;
-      case 'UPDATE':
-        self.emit('update', msg);
-        break;
-      case 'DELETE':
-        self.emit('delete', msg);
-        break;
-      case 'LIST':
-        self.emit('list', msg);
-        break;
-      default:
-        L.warn('Recieved unknown request: ' + msg.request)
         break;
     }
   });
@@ -157,22 +119,43 @@ Connection.prototype.sendMessage = function(msg) {
   return msg;
 }
 
-Connection.prototype.updateContext = function(type, remote) {
-  if ((type === 'server' || type === 'client') && typeof remote === 'string') {
-    this.type = type
-    this.remote = remote
-    L.info('Updated connection context to ' + type + ' : ' + remote)
-    this.emit('context-updated')
-  }
-  else {
-    L.error('updateContext called with invalid arguments: ' + type + ', ' + remote)
-  }
-}
-
 Connection.prototype.close = function() {
   this.ws.close();
 }
 
-extend(Connection.prototype, helpers);
+// Convinience for sending requests
+Connection.prototype.sendRequest = function(request, uri, headers, body) {
+  var self = this;
+  if (typeof uri === 'string')
+    uri = new URI(uri);
+  var msg = new Request(self, { type: Message.REQUEST, request: request, uri: uri, seq: self.currentSeq, headers: headers, body: body });
+  self.currentSeq++;
+  self.pendingRequests[msg.seq] = msg;
+  return self.sendMessage(msg);
+}
+Connection.prototype.sendConnect = function(headers, body) {
+  return this.sendRequest('CONNECT', null, headers, body)
+}
+Connection.prototype.sendAuthenticate = function(headers, body) {
+  return this.sendRequest('AUTHENTICATE', null, headers, body)
+}
+Connection.prototype.sendRegister = function(headers, body) {
+  return this.sendRequest('REGISTER', null, headers, body)
+}
+Connection.prototype.sendSelect = function(uri, headers, body) {
+  return this.sendRequest('SELECT', uri, headers, body)
+}
+Connection.prototype.sendCreate = function(uri, headers, body) {
+  return this.sendRequest('CREATE', uri, headers, body)
+}
+Connection.prototype.sendUpdate = function(uri, headers, body) {
+  return this.sendRequest('UPDATE', uri, headers, body)
+}
+Connection.prototype.sendDelete = function(uri, headers, body) {
+  return this.sendRequest('DELETE', uri, headers, body)
+}
+Connection.prototype.sendList = function(uri, headers, body) {
+  return this.sendRequest('LIST', uri, headers, body)
+}
 
 module.exports = Connection;

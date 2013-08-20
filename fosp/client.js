@@ -9,12 +9,22 @@ var buildModule = function(events, WebSocket, Message, Connection) {
     self.host = options.host || 'localhost.localdomain';
     self.con = null
 
-    self.wsc = new WebSocket.client()
-    self.wsc.connect('ws://' + self.host + ':' + self.port);
-    self.wsc.on('connect', function(connection) {
-      self.con = new Connection(connection);
-      self.emit('connect')
-    })
+    // Work around different websocket apis
+    if (typeof WebSocket.client === 'function') {
+      var wsc = new WebSocket.client()
+      wsc.connect('ws://' + self.host + ':' + self.port);
+      wsc.on('connect', function(connection) {
+        self.con = new Connection(connection);
+        self.emit('connect')
+      })
+    }
+    else {
+      ws = new WebSocket('ws://' + self.host + ':' + self.port);
+      ws.onopen = function() {
+        self.con = new Connection(ws);
+        self.emit('connect')
+      }
+    }
   };
   Client.prototype = Object.create(events.EventEmitter.prototype);
 

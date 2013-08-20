@@ -8,25 +8,28 @@ var buildModule = function(events, URI, Message, Request, Parser, L) {
     self.currentSeq = 1;
     self.pendingRequests = {};
 
-    // Emit message events on new messages, and also more specific events
-    self.ws.on('message', function(message) {
+    var emitMessage = function(message) {
       try {
-        var msg = Parser.parseMessage(self, message.utf8Data);
+        var data = message.utf8Data ? message.utf8Data : message.data;
+        var msg = Parser.parseMessage(self, data);
         L.debug('Recieved new message: ' + msg.short());
         self.emit('message', msg);
       }
       catch(e) {
         L.error(e.stack);
       }
-    });
+    }
 
-    self.ws.on('close', function() {
-      self.emit('close');
-    });
-
-    self.ws.on('error', function(err) {
-      self.emit('error',err);
-    });
+    if (typeof self.ws.on === 'function') {
+      self.ws.on('message', function(message) { emitMessage(message); });
+      self.ws.on('close', function() { self.emit('close'); });
+      self.ws.on('error', function(err) { self.emit('error',err); });
+    }
+    else {
+      self.ws.onmessage = function(message) { emitMessage(message); }
+      self.ws.onclose = function() { self.emit('close'); }
+      self.ws.onerror = function(err) { self.emit('error',err); }
+    }
 
     self.on('message', function(msg) {
       switch(msg.type) {

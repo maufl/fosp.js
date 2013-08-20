@@ -6,8 +6,8 @@ var buildModule = function(events, extend) {
     this.con = con
     extend(true,this,msg)
     // Set default values for headers and body
-    this.headers = typeof this.headers === 'undefined' ? {} : this.headers
-    this.body = typeof this.body === 'undefined'? null : this.body
+    this.headers = typeof msg.headers === 'undefined' ? {} : this.headers
+    this.body = typeof msg.body === 'undefined'? null : this.body
   }
 
   Message.REQUESTS = ["CONNECT", "AUTHENTICATE", "REGISTER", "CREATE", "UPDATE", "DELETE", "SELECT", "LIST"];

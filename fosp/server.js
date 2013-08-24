@@ -15,7 +15,7 @@ var Server = function(options) {
   self.local_domain = options.local_domain || 'localhost.localdomain';
   self.middlewareStack = [];
   // Bootstrap underlying objects
-  self.connectionPool = new ConnectionPool();
+  self.connectionPool = new ConnectionPool(self);
   self.httpServer = new http.createServer(function(request, response) {
     L.info('Received http request for ' + request.url);
     response.writeHead(404);

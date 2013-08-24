@@ -163,7 +163,9 @@ RethinkDB.prototype.addUser = function(name, domain, password, callback) {
   var self = this;
   self.isUser(name, function(exists) {
     if (exists) {
-      callback("User already exists")
+      var err = new Error("User already exists")
+      err.status_code = 409
+      callback(err)
       return;
     }
     self.db.tableCreate(name).run(self.connection, function(err, object) {
@@ -201,8 +203,18 @@ RethinkDB.prototype.authenticateUser = function(name, password, callback) {
       if (users.length === 1 && users[0].password === password) {
         callback(null);
       }
+      else if (users.length === 1) {
+        var err = new Error("Password did not match")
+        err.status_code = 401
+        callback(err);
+      }
+      else if (users.length === 0) {
+        var err = new Error("User not found")
+        err.status_code = 404
+        callback(err)
+      }
       else {
-        callback("Failed to authenticate");
+        callback(new Error("Internal server error"))
       }
     });
   });

@@ -23,9 +23,8 @@ server.on('connect', function(con) {
 });
 
 var auth = new AuthenticatorMiddleware(function(name, password, callback) {
-  db.authenticateUser(name, password, function(failed) {
-    var success = failed ? false : true;
-    callback(success);
+  db.authenticateUser(name, password, function(err) {
+    callback(err);
   });
 });
 L.info('Add authentication middleware');
@@ -35,11 +34,15 @@ var rdr = new RemoteDomainRouter(server);
 server.middlewareStack.push(rdr);
 
 server.on('register', function(con, req) {
-  db.addUser(req.body.name, server.local_domain, req.body.password, function(failed) {
-    if (failed)
-      req.sendFailed(500);
-    else
+  db.addUser(req.body.name, server.local_domain, req.body.password, function(err) {
+    if (err) {
+      L.warn('Registration failed: ' + err)
+      req.sendFailed(err.status_code || 500, {}, err.message);
+    }
+    else {
+      L.info('Registration of ' + req.body.name + ' successfull')
       req.sendSucceded(200);
+    }
   });
 });
 

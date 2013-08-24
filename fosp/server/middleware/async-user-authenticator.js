@@ -10,17 +10,16 @@ AsyncAuthenticator.prototype = Object.create(Middleware.prototype)
 
 AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
   L.info('Handle authentication')
-  this.authFunc(msg.body.name, msg.body.password, function(success) {
-    L.info('User is authenticated ' + success);
-    if (success) {
-      msg.sendSucceded(200);
-      msg.con.updateContext('client', msg.body.name)
-      msg.con.authenticated = true;
-      L.info('Successfully authenticated!');
+  this.authFunc(msg.body.name, msg.body.password, function(err) {
+    if (err) {
+      L.warn('Authentication unsuccessfull');
+      msg.sendFailed(err.status_code || 500, {}, err.message);
       return;
     }
-    L.info('Authentication unsuccessfull');
-    msg.sendFailed(401);
+    msg.sendSucceded(200);
+    msg.con.updateContext('client', msg.body.name)
+    msg.con.authenticated = true;
+    L.info('Successfully authenticated!');
   });
   return false;
 }

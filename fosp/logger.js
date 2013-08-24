@@ -24,14 +24,25 @@
     }
   }
   else if (typeof define === 'function' && define.amd) {
+    var logLevels = ['verbose','debug','log','info','warn','error']
+    var log = function(level,module,message) {
+      if (logLevels.indexOf(console.level) <= logLevels.indexOf(level)) {
+        if (typeof console[level] === 'function') {
+          console[level].call(console, level + ' [' + module + '] ' +message)
+        }
+        else {
+          console.log(level + ' [' + module + '] ' +message)
+        }
+      }
+    }
     var forFile = function(name) {
       return {
-        log: function(text) { console.log('log ['+name+'] '+text) },
-        debug: function(text) { console.log('debug ['+name+'] '+text) },
-        verbose: function(text) { console.log('verbose ['+name+'] '+text) },
-        info: function(text) { console.info('info ['+name+'] '+text) },
-        warn: function(text) { console.warn('warn ['+name+'] '+text) },
-        error: function(text) { console.error('error ['+name+'] '+text) },
+        log: function(text) { log('log',name,text) },
+        verbose: function(text) { log('verbose',name,text) },
+        debug: function(text) { log('debug',name,text) },
+        info: function(text) { log('info',name,text) },
+        warn: function(text) { log('warn',name,text) },
+        error: function(text) { log('error',name,text) },
       }
     }
     define({ forFile: forFile });

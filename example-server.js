@@ -5,7 +5,9 @@ var AuthenticatorMiddleware = require('./fosp/server/middleware/async-user-authe
 var RemoteDomainRouter = require('./fosp/server/middleware/remote-domain-router');
 var RethinkDB = require('./fosp/server/rethinkdb-driver');
 var DatabaseAbstractionLayer = require('./fosp/server/database-abstraction-layer');
+var NotificationListener = require('./fosp/server/notification-listener')
 var L = require('./fosp/logger').forFile(__filename);
+L.transports.console.level = 'debug'
 
 var options = JSON.parse(fs.readFileSync('server.conf'));
 var server = new fosp.Server(options);
@@ -32,6 +34,8 @@ server.middlewareStack.push(auth);
 
 var rdr = new RemoteDomainRouter(server);
 server.middlewareStack.push(rdr);
+
+var nL = new NotificationListener(server, db);
 
 server.on('register', function(con, req) {
   db.addUser(req.body.name, server.local_domain, req.body.password, function(err) {
@@ -71,28 +75,6 @@ server.on('create', function(con, req) {
       req.sendSucceded(201);
   });
 });
-db.on('created', function(users, path) {
-  L.info(path + ' was created, following users should be notified: ' + users)
-  for (var i=0; i < users.length; i++) {
-    var user = users[i]
-    db.select(user, path, function(err, node) {
-      if (err)
-        return
-      var name = user.substring(0, user.indexOf('@'))
-      var domain = user.substring(user.indexOf('@') + 1, user.length)
-      if (domain === server.local_domain) {
-        var con = server.connectionPool.get(name)
-        if (con)
-          con.sendCreated(path, {}, node)
-      }
-      else {
-        var con = server.connectionPool.get(domain)
-        if (con)
-          con.sendCreated(path, {User: name}, node)
-      }
-    })
-  }
-})
 server.on('update', function(con, req) {
   db.update(getUser(req), req.uri.toString(), req.body, function(err, result) {
     if (err)
@@ -101,31 +83,6 @@ server.on('update', function(con, req) {
       req.sendSucceded(204);
   });
 });
-db.on('updated', function(users, path, node) {
-  L.info(path + ' was updated, following users should be notified: ' + users)
-  for (var i=0; i < users.length; i++) {
-    var user = users[i]
-    db.select(user, path, function(err, node) {
-      if (err) {
-        L.warn('Error occured when fetching node for update event: ' + err)
-        return
-      }
-      var name = user.substring(0, user.indexOf('@'))
-      var domain = user.substring(user.indexOf('@') + 1, user.length)
-      L.info('Send update message to user ' + name + ' on ' + domain)
-      if (domain === server.local_domain) {
-        var con = server.connectionPool.get(name)
-        if (con)
-          con.sendUpdated(path, {}, node)
-      }
-      else {
-        var con = server.connectionPool.get(domain)
-        if (con)
-          con.sendUpdated(path, {User: name}, node)
-      }
-    })
-  }
-})
 server.on('delete', function(con, req) {
   db.delete(getUser(req), req.uri.toString(), function(err) {
     if (err)
@@ -134,24 +91,6 @@ server.on('delete', function(con, req) {
       req.sendSucceded(204);
   });
 });
-db.on('deleted', function(users, path) {
-  L.info(path + ' was deleted, following users should be notified: ' + users)
-  for (var i=0; i < users.length; i++) {
-    var user = users[i]
-    var name = user.substring(0, user.indexOf('@'))
-    var domain = user.substring(user.indexOf('@') + 1, user.length)
-    if (domain === server.local_domain) {
-      var con = server.connectionPool.get(name)
-      if (con)
-        con.sendDeleted(path)
-    }
-    else {
-      var con = server.connectionPool.get(domain)
-      if (con)
-        con.sendDeleted(path, {User: name})
-    }
-  }
-})
 server.on('list', function(con, req) {
   db.list(getUser(req), req.uri.toString(), function(err, children) {
     if (err)

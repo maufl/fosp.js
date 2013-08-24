@@ -17,8 +17,8 @@ AsyncAuthenticator.prototype.handleAuthenticate = function(msg) {
       return;
     }
     msg.sendSucceded(200);
-    msg.con.updateContext('client', msg.body.name)
     msg.con.authenticated = true;
+    msg.con.updateContext('client', msg.body.name)
     L.info('Successfully authenticated!');
   });
   return false;

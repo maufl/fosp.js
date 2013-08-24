@@ -4,7 +4,6 @@ var extend = require('extend')
 var events = require('events')
 var URI = require('../uri')
 var L = require('../logger').forFile(__filename);
-L.transports.console.level = 'debug'
 
 var DatabaseAbstractionLayer = function(dbDriver) {
   var self = this

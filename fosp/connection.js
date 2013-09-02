@@ -12,7 +12,7 @@ var buildModule = function(events, URI, Message, Request, Parser, L) {
       try {
         var data = message.utf8Data ? message.utf8Data : message.data;
         var msg = Parser.parseMessage(self, data);
-        L.debug('Recieved new message: ' + msg.short());
+        L.debug('Recieved new message: ' + msg.toString());
         self.emit('message', msg);
       }
       catch(e) {
@@ -99,7 +99,7 @@ var buildModule = function(events, URI, Message, Request, Parser, L) {
     var self = this;
     try {
       var raw = msg.serialize();
-      L.debug("Send message: " + msg.short());
+      L.debug("Send message: " + msg.toString());
       L.verbose(raw);
       this.ws.send(raw);
       if (msg instanceof Request) {
@@ -168,7 +168,7 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 }
 else if (typeof define === 'function' && define.amd) {
   define(['EventEmitter', './uri', './message', './request', './parser', './logger'], function(EventEmitter, URI, Message, Request, Parser, logger) {
-    return buildModule({EventEmitter: EventEmitter}, URI, Message, Request, Parser, logger.forFile('fosp/notification'));
+    return buildModule({EventEmitter: EventEmitter}, URI, Message, Request, Parser, logger.forFile('fosp/connection'));
   })
 }
 })();

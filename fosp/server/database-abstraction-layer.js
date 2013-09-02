@@ -23,7 +23,7 @@ var isSubset = function(set, subset) {
 var permissionsFor = function(user, node) {
   if (typeof node === 'object' && node !== null
       && typeof node.acl === 'object' && node.acl !== null
-      && typeof node.acl[user] === 'object')
+      && typeof node.acl[user] === 'object' && node.acl[user] !== null)
     return node.acl[user]
 
   return []
@@ -59,6 +59,8 @@ var effectiveSubscriptions = function(nodes, event) {
       continue
     for (user in node.subscriptions) {
       var subscription = node.subscriptions[user]
+      if (subscription === null)
+        continue
       if (subscription.events.indexOf(event) >= 0
           && ( subscription.depth === -1 || subscription.depth >= i))
         users.push(user)
@@ -99,13 +101,14 @@ DatabaseAbstractionLayer.prototype.authenticateFor = function(user, path, permis
 DatabaseAbstractionLayer.prototype.select = function(user, path, callback) {
   this.permissionsFor(user, path, function(err, permissions, node) {
     if (err) {
-      callback(err, null)
-      return
+      callback(err, null);
+      return;
     }
     if (permissions.length === 0) {
-      err = new Error('Insufficent permissions')
-      err.status_code = 403
-      callback(err, null)
+      err = new Error('Insufficent permissions');
+      err.status_code = 403;
+      callback(err, null);
+      return;
     }
     var result = {}
     result.owner = node.owner
@@ -117,7 +120,7 @@ DatabaseAbstractionLayer.prototype.select = function(user, path, callback) {
       result.acl = node.acl
     if (permissions.indexOf('subscriptions-read') >= 0)
       result.subscriptions = node.subscriptions
-    callback(null, result)
+    callback(null, result);
   });
 }
 
@@ -206,8 +209,17 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
     }
     if (content.data)
       extend(true, node, { data: content.data })
-    if (content.subscriptions)
-      extend(true, node, { subscriptions: content.subscriptions })
+    if (content.subscriptions) {
+      var subs = content.subscriptions
+      if (typeof node.subscriptions !== 'object')
+        node.subscriptions = {}
+      for (user in subs) {
+        if (subs[user] === null)
+          node.subscriptions[user] = null
+        else
+          node.subscriptions[user] = { events: subs[user].events, depth: subs[user].depth }
+      }
+    }
     if (content.acl) {
       if (node.acl === null || typeof node.acl === 'undefined') {
         node.acl = content.acl
@@ -216,6 +228,9 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
         for (user in content.acl) {
           if (typeof node.acl[user] === 'undefined' || node.acl[user] === null) {
             node.acl[user] = content.acl[user]
+          }
+          else if (content.acl[user] === null) {
+            node.acl[user] = null
           }
           else {
             var perms = content.acl[user]
@@ -234,7 +249,7 @@ DatabaseAbstractionLayer.prototype.update = function(user, path, content, callba
         }
       }
     }
-    content.mtime = moment().toISOString()
+    node.mtime = moment().toISOString()
     self.dbDriver.updateNode(path, node, callback)
     self.prepareNotifications(path, 'updated').fire();
   });

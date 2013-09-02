@@ -3,7 +3,6 @@ var events = require('events')
 var util = require('util')
 var WebSocket = require('websocket')
 var L = require('../logger').forFile(__filename)
-L.transports.console.level = 'debug'
 
 var ConnectionPool = function(server) {
   this.server = server

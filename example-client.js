@@ -80,7 +80,7 @@ ExampleClient.prototype.cd = function(path) {
   for (var i=0; i<dirs.length; i++) {
     var dir = dirs[i];
     if (dir == '..') {
-      var cwdDirs = this.confi.cwd.split('/');
+      var cwdDirs = this.config.cwd.split('/');
       if (cwdDirs.length > 1) {
         cwdDirs.pop();
         this.config.cwd = cwdDirs.join('/');

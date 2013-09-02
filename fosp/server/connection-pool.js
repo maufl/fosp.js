@@ -42,6 +42,14 @@ ConnectionPool.prototype.push = function(con) {
   L.verbose(util.inspect(self))
 }
 
+ConnectionPool.prototype.getAll = function(identifier) {
+  var cons = this.connectionMapping[identifier]
+  if (util.isArray(cons)) {
+    return cons
+  }
+  return null
+}
+
 ConnectionPool.prototype.getOne = function(identifier) {
   var cons = this.connectionMapping[identifier]
   if (util.isArray(cons) && cons.length >= 1)

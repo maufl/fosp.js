@@ -15,6 +15,23 @@ var NotificationListener = function(server, db) {
   self.db.on('deleted', function(users, path) {
     self.handleDeleted(users,path)
   })
+  server.on('notification', function(msg) {
+    var user = msg.headers['User']
+    if (typeof user !== 'string') {
+      L.error('Recieved notification but no User header was present: ' + msg.headers)
+      return
+    }
+    var cons = server.connectionPool.getAll(user)
+    if (cons === null) {
+      L.warn('User ' + user + ' should be notified but is not connected')
+      return
+    }
+    for (var i=0; i<cons.length; i++) {
+      L.info('Sending notification to user ' + user + ' on ' + i + ' connection')
+      cons[i].sendNotification(msg.event, msg.uri, {}, msg.body)
+    }
+  })
+
 }
 NotificationListener.prototype.handleCreated = function(users, path) {
   L.info(path + ' was created, following users should be notified: ' + users)
@@ -45,11 +62,14 @@ NotificationListener.prototype.handleDeleted = function(users, path) {
     L.debug('Notifying user ' + name + ' on domain ' + domain)
     if (domain === this.server.local_domain) {
       L.debug('Is local user')
-      var con = this.server.connectionPool.getOne(name)
-      if (con)
-        con.sendDeleted(path)
-      else
+      var cons = this.server.connectionPool.getAll(name)
+      if (cons !== null) {
+        for (var i=0; i<cons.length; i++)
+          cons[i].sendDeleted(path)
+      }
+      else {
         L.info('User ' + name + ' is not connected, no notification was sent')
+      }
     }
     else {
       this.server.connectionPool.getOrCreateOne(domain, function(err, con) {

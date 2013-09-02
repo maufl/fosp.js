@@ -38,6 +38,21 @@ var buildModule = function(L) {
     return this.path === '/'
   }
 
+  URI.ancestorOf = function(parent, child) {
+    return (child.indexOf(parent) === 0 && child.length > parent.length)
+  }
+
+  URI.parentOf = function(parent, child) {
+    if (!URI.ancestorOf(parent,child))
+      return false
+    L.debug('Is parent ' + parent + ' :: ' + child)
+    var tail = child.substring(parent.length + 1)
+    L.debug('Tail is ' + tail)
+    if (tail.indexOf('/') < 0)
+      return true
+    return false
+  }
+
   return URI
 }
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {

@@ -1,0 +1,8 @@
+[Unit]
+Description=Simple FOSP server
+
+[Service]
+ExecStart=/usr/bin/fosp-server --config /etc/fosp-server/%i.conf
+
+[Install]
+WantedBy=multi-user.target

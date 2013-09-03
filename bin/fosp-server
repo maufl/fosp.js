@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+var fs = require('fs');
+var path = require('path');
+var ap = require('argparser');
+var basePath = path.join(path.dirname(fs.realpathSync(__filename)), '..')
+var fosp = require(path.join(basePath,'lib/fosp'));
+var RethinkDB = require(path.join(basePath, 'lib/server/rethinkdb-driver'));
+var L = require(path.join(basePath, 'lib/logger')).forFile(__filename);
+L.transports.console.level = 'info'
+var o = ap.vals("config").err(function(){ L.error("Invalid arguments suplied, only valid and required options is --config /path/to/config.conf"); process.exit(1); }).parse();
+var confFile = o.opt("config");
+if (! confFile) {
+  L.error('No config file supplied, please pass it with the --config argument')
+  process.exit(1)
+}
+var options = null
+try {
+  options = JSON.parse(fs.readFileSync(confFile));
+}
+catch (e) {
+  L.error('Could not open config file ' + confFile + '!')
+  process.exit(1)
+}
+
+if (options.db.driver !== 'rethinkdb') {
+  L.error('Config file contains unspecified db driver!')
+  return
+}
+var dbDriver = new RethinkDB(options.db);
+
+var server = new fosp.Server(options, dbDriver);
+L.info('Sever initialized');
+
+
+
+server.on('connect', function(con) {
+  L.info('Recieved a new connection: ' + con.id);
+
+  con.on('close', function() {
+    L.info('Closing connection: ' + con.id);
+  });
+});

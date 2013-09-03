@@ -1,10 +1,14 @@
+#!/usr/bin/env node
+// vim: set filetype=javascript
 // more or less simple example client
 var events = require('events')
 var readline = require('readline');
 var sprintf = require('sprintf').sprintf;
 var fs = require('fs');
-var fosp = require('./fosp');
-var L = require('./fosp/logger').forFile(__filename);
+var path = require('path')
+var basePath = path.join(path.dirname(fs.realpathSync(__filename)), '..')
+var fosp = require(path.join(basePath, 'lib/fosp'));
+var L = require(path.join(basePath, 'lib/logger')).forFile(__filename);
 
 var ExampleClient = function(configFile) {
   var self = this;

@@ -3,11 +3,20 @@
   "version": "0.1.0",
   "author": "Felix Maurer <Felix.Maurer@fsmi.uni-karlsruhe.de>",
   "description": "Libraries that implement the FOSP & example client and server",
-  "bin": {
-    "fosp-server": "./example-server.js",
-    "fosp-client": "./example-client.js"
+  "repository": {
+    "type": "git",
+    "url": "http://bitbucket.org/maufl/fosp.git"
   },
-  "main": "./fosp.js",
+  "homepage": "http://bitbucket.org/maufl/fosp.git",
+  "bugs": {
+    "email": "Felix.Maurer@fsmi.uni-karlsruhe.de",
+    "url": "https://bitbucket.org/maufl/fosp/issues"
+  },
+  "bin": {
+    "fosp-server": "./bin/fosp-server",
+    "fosp-client": "./bin/fosp-client"
+  },
+  "main": "./lib/fosp.js",
   "keywords": [
     "fosp"
   ],
@@ -17,11 +26,18 @@
     "winston": "*",
     "sprintf": "*",
     "rethinkdb": "*",
-    "moment": "*"
+    "moment": "*",
+    "argparser": "*"
   },
-  "license": "MIT",
+  "license": "GPL",
   "engines": {
     "node": ">=0.10"
+  },
+  "os": ["linux"],
+  "private": true,
+  "scripts": {
+    "install": "if [ \"$(id -u)\" = \"0\" ]; then cp fosp-server@.service /usr/lib/systemd/system/fosp-server@.service; mkdir /etc/fosp-server; cp default.conf /etc/fosp-server/default.conf; fi; true",
+    "postuninstall": "if [ \"$(id -u)\" = \"0\" ]; then rm /usr/lib/systemd/system/fosp-server@.service; fi; true"
   }
 }
 

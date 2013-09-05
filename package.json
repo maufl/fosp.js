@@ -21,17 +21,17 @@
     "fosp"
   ],
   "dependencies": {
-    "websocket": "*",
-    "extend": "*",
-    "winston": "*",
-    "sprintf": "*",
-    "rethinkdb": "*",
-    "moment": "*",
-    "argparser": "*"
+    "websocket": "1.0.x",
+    "extend": "1.1.x",
+    "winston": "0.7.x",
+    "sprintf": "0.1.x",
+    "rethinkdb": "1.8.x",
+    "moment": "2.1.x",
+    "argparser": "0.2.x"
   },
   "license": "GPL",
   "engines": {
-    "node": ">=0.10"
+    "node": ">= 0.10.0"
   },
   "os": ["linux"],
   "private": true

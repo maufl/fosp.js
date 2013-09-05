@@ -34,10 +34,6 @@
     "node": ">=0.10"
   },
   "os": ["linux"],
-  "private": true,
-  "scripts": {
-    "install": "if [ \"$(id -u)\" = \"0\" ]; then cp fosp-server@.service /usr/lib/systemd/system/fosp-server@.service; mkdir /etc/fosp-server; cp default.conf /etc/fosp-server/default.conf; fi; true",
-    "postuninstall": "if [ \"$(id -u)\" = \"0\" ]; then rm /usr/lib/systemd/system/fosp-server@.service; fi; true"
-  }
+  "private": true
 }
 

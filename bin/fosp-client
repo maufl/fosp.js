@@ -287,7 +287,7 @@ fospClient.on('write', function(params) {
   });
 })
 
-var permissions = ['data-read', 'data-write', 'acl-read', 'acl-write', 'subscriptions-read', 'subscriptions-write', 'children-read', 'children-write', 'children-delete']
+var permissions = ['data-read', 'data-write', 'acl-read', 'acl-write', 'subscriptions-read', 'subscriptions-write', 'children-read', 'children-write', 'children-delete', 'attachment-read', 'attachment-write']
 
 fospClient.on('allow', function(params) {
   var self = this

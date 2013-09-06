@@ -3,3 +3,4 @@ Makefile
 server.conf
 node_modules
 client2.conf
+filestorage

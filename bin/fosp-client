@@ -63,7 +63,7 @@ var ExampleClient = function(configFile) {
     var command = params.shift();
     var validCommands = ['cd','pwd','exit','register','authenticate',
                          'select','create','update','delete','list',
-                         'allow', 'deny', 'subscribe', 'unsubscribe'];
+                         'allow', 'deny', 'subscribe', 'unsubscribe', 'read', 'write'];
     if (validCommands.indexOf(command) >= 0)
       self.emit(command, params)
     else
@@ -242,6 +242,48 @@ fospClient.on('update', function(params) {
     return;
   self.tmpCd(path, function(dir) {
     self.formatResponsePrompt(self.client.con.sendUpdate(dir, {}, {data: body}));
+  });
+})
+fospClient.on('read', function(params) {
+  var self = this, path = params.shift(), target = params.shift()
+  if (! this.paramsDefined(path, target) )
+    return;
+  self.tmpCd(path, function(dir) {
+    self.client.con.sendRead(dir).on('succeded', function(resp) {
+      L.info('Successfully read')
+      fs.writeFile(target, resp.body, { encoding: 'binary' }, function(err) {
+        if (err)
+          L.error('Error writing to target file ' + target + ': ' + err)
+        else
+          L.info('Successfully written to file ' + target)
+        fospClient.prompt()
+      })
+    }).on('failed', function(resp) {
+      L.warn('Read failed: ' + resp.body)
+      fospClient.prompt()
+    })
+  });
+})
+fospClient.on('write', function(params) {
+  var self = this, path = params.shift(), source = params.shift(), buffer
+  if (! this.paramsDefined(path, source) )
+    return;
+  try {
+    buffer = fs.readFileSync(source)
+  }
+  catch(e) {
+    L.error('Error reading file: ' + e)
+    fospClient.prompt()
+    return
+  }
+  self.tmpCd(path, function(dir) {
+    self.client.con.sendWrite(dir, {}, buffer).on('succeded', function(resp) {
+      L.info('Successfully written')
+      fospClient.prompt()
+    }).on('failed', function(resp) {
+      L.warn('Write failed: ' + resp.body)
+      fospClient.prompt()
+    })
   });
 })
 

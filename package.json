@@ -14,7 +14,8 @@
   },
   "bin": {
     "fosp-server": "./bin/fosp-server",
-    "fosp-client": "./bin/fosp-client"
+    "fosp-client": "./bin/fosp-client",
+    "q-test-client": "./bin/q-test-client"
   },
   "main": "./lib/fosp.js",
   "keywords": [

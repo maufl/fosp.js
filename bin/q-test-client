@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+# vim: set filetype=javascript
+
+var fs = require('fs')
+var path = require('path')
+var moment = require('moment')
+var Q = require('q')
+
+
+var TestClient = function(file) {
+  this.index = 0
+  this.vars = {}
+  this.file = path.resolve(file)
+  this.commands = require(this.file)
+  this.performanceLog = file + '-' + moment().toISOString() + '-perf_log'
+  this.labels = []
+  this.d = Q.defer()
+}
+
+TestClient.prototype.run = function() { this.next(); return this.d.promise; }
+
+TestClient.prototype.next = function() {
+  var self = this
+  if (self.index >= self.commands.length) {
+    self.d.resolve()
+    return
+  }
+  var cmd = self.commands[self.index]
+  cmd.call(self).then(function() {
+    self.index++
+    self.next()
+  }).catch(function(err) {
+    self.d.reject('Test failed at command ' + (self.index + 1) + ': ' + err)
+  })
+}
+
+
+TestClient.prototype.interpolate = function(o) {
+  var self = this
+  if (typeof o === 'string' && o.match(/\${[^}]+}/))
+    return o.replace(/\${([^}]+)}/g, function(m,g) { return self.vars[g]; })
+  else if (typeof o === 'string' && o.match(/^\$/))
+    return this.vars[o.substr(1)]
+  else if (typeof o !== 'object' || o === null)
+    return o
+  for (key in o) {
+    o[this.interpolate(key)] = this.interpolate(o[key])
+  }
+  return o
+}
+
+TestClient.prototype.startMeasurement = function(desc) {
+  return { desc: desc, start: moment() }
+}
+
+TestClient.prototype.stopMeasurement = function(o) {
+  var then = moment(o.start).valueOf(), now = moment().valueOf(), diff = now - then
+  fs.appendFile(this.performanceLog, '"'+o.desc+'",'+then+','+now+','+diff+'\n')
+}
+
+
+if (require.main === module) {
+  if (process.argv.length === 3) {
+    var val = process.argv[2]
+    var test = new TestClient(val)
+    test.run().then(function() {
+      console.log('Test ' + val + ' succeded')
+      process.exit(0)
+    }).catch(function(err) {
+      console.error(err)
+      process.exit(1)
+    })
+  }
+}

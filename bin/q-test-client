@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-# vim: set filetype=javascript
 
 var fs = require('fs')
 var path = require('path')

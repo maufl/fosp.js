@@ -15,9 +15,9 @@ tests.set = function(h) {
   }
 }
 
-tests.for = function(t) {
+tests.for = function(t, as) {
   return function() {
-    var i = this.index - 1, currentLabel = this.labels[this.labels.length - 1]
+    var i = this.index - 1, currentLabel = this.labels[this.labels.length - 1], a = as || 'i'
     if (typeof currentLabel === 'undefined' || currentLabel.index !== i) {
       this.labels.push({ index: i, state: t })
       currentLabel = this.labels[this.labels.length - 1]
@@ -27,6 +27,7 @@ tests.for = function(t) {
       this.labels.pop()
       return Q()
     }
+    this.vars[a] = t - currentLabel.state
     currentLabel.state--
     return Q()
   }
@@ -38,6 +39,35 @@ tests.end = function() {
     if (! currentLabel.end)
       currentLabel.end = this.index
     this.index = currentLabel.index
+    return Q()
+  }
+}
+
+tests.randomInt = function(as, limit) {
+  return function() {
+    this.vars[as] = Math.random() * (limit || 1)
+    return Q()
+  }
+}
+var guid = function() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+tests.uuid = function (as) {
+  return function() {
+    this.vars[as] = guid()
+    return Q()
+  }
+}
+tests.randomString = function(as, length) {
+  return function() {
+    var l = length || 10, possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    this.vars[as] = ''
+    for (var i=0; i<l; i++) {
+      this.vars[as] += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
     return Q()
   }
 }
@@ -54,8 +84,11 @@ tests.connect = function(h, options) {
   return function() {
     if (h)
       h = this.interpolate(h)
-    var o = options || {}, host = h || 'localhost.localdomain', port = o.port || 1337, version = o.version || '0.1', d = Q.defer(), timeout = o.timeout || 5000, expect = o.expect || 'SUCCEDED'
+    var o = options || {}
+    o = this.interpolate(o)
+    var host = h || 'localhost.localdomain', port = o.port || 1337, version = o.version || '0.1', d = Q.defer(), timeout = o.timeout || 5000, expect = o.expect || 'SUCCEDED'
     L('Creating new client')
+    L('Naming connection ' + o.as)
     var self = this, c = new Client( { host: host, port: port } )
     this.vars.C = c
     if (o.as)
@@ -78,63 +111,66 @@ tests.connect = function(h, options) {
 
 tests.register = function(n, p, o) {
   return function() {
-    var name = this.interpolate(n), password = this.interpolate(p)
-    return singleRequest.call(this, 'REGISTER', null, null, { name: name, password: password }, o)
+    var name = this.interpolate(n), password = this.interpolate(p), options = this.interpolate(o)
+    return singleRequest.call(this, 'REGISTER', null, null, { name: name, password: password }, options)
   }
 }
 
 tests.authenticate = function(n, p, o) {
   return function() {
-    var name = this.interpolate(n), password = this.interpolate(p)
-    return singleRequest.call(this, 'AUTHENTICATE', null, null, { name: name, password: password }, o)
+    var name = this.interpolate(n), password = this.interpolate(p), options = this.interpolate(o)
+    return singleRequest.call(this, 'AUTHENTICATE', null, null, { name: name, password: password }, options)
   }
 }
 
 tests.select = function(u, o) {
   return function() {
     var uri = this.interpolate(u)
-    return singleRequest.call(this, 'SELECT', uri, null, null, o)
+    return singleRequest.call(this, 'SELECT', uri, null, null, this.interpolate(o))
   }
 }
 
 tests.create = function(u, b, o) {
   return function() {
     var uri = this.interpolate(u), body = this.interpolate(b)
-    return singleRequest.call(this, 'CREATE', uri, null, body, o)
+    return singleRequest.call(this, 'CREATE', uri, null, body, this.interpolate(o))
   }
 }
 
 tests.update = function(u, b, o) {
   return function() {
     var uri = this.interpolate(u), body = this.interpolate(b)
-    return singleRequest.call(this, 'UPDATE', uri, null, body, o)
+    return singleRequest.call(this, 'UPDATE', uri, null, body, this.interpolate(o))
   }
 }
 
 tests.delete = function(u, o) {
   return function() {
     var uri = this.interpolate(u)
-    return singleRequest.call(this, 'DELETE', uri, null, null, o)
+    return singleRequest.call(this, 'DELETE', uri, null, null, this.interpolate(o))
   }
 }
 
 tests.list = function(u, o) {
   return function() {
     var uri = this.interpolate(u)
-    return singleRequest.call(this, 'LIST', uri, null, null, o)
+    return singleRequest.call(this, 'LIST', uri, null, null, this.interpolate(o))
   }
 }
 
 var singleRequest = function(request, uri, headers, body, options) {
-  var self = this, o = options || {}, o = this.interpolate(o), timeout = (o.timeout || 5000), on = (o.on || this.vars.C),
+  var o = {}
+  if (options)
+    o = this.interpolate(options)
+  var self = this, timeout = (o.timeout || 5000), on = (this.vars[o.on] || this.vars.C),
       uri = (uri || null), headers = (headers || {}), body = (body || null), expect = o.expect || 'SUCCEDED', d = Q.defer()
   var t = setTimeout(function() { d.reject(request + ' timed out after ' + timeout + 'ms')}, timeout);
   var req = on.con.sendRequest(request, uri, headers, body)
   L('Sending new request ' + req.toString())
-  var m = this.startMeasurement(req.short())
+  var s = this.startMeasurement()
   req.on('response', function(resp) {
     L('Recieved response ' + resp.toString())
-    self.stopMeasurement(m)
+    self.stopMeasurement(s,req.request,req.seq, o.on || 'default')
     clearTimeout(t)
     if (resp.response !== expect)
       d.reject(request + ' ' + uri + ' response type is not ' + expect + ' but ' + resp.response)

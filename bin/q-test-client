@@ -11,7 +11,7 @@ var TestClient = function(file) {
   this.vars = {}
   this.file = path.resolve(file)
   this.commands = require(this.file)
-  this.performanceLog = file + '-' + moment().toISOString() + '-perf_log'
+  this.performanceLog = file + '-' + moment().toISOString() + '.run'
   this.labels = []
   this.d = Q.defer()
 }
@@ -35,7 +35,7 @@ TestClient.prototype.next = function() {
 
 
 TestClient.prototype.interpolate = function(o) {
-  var self = this
+  var self = this, O = {}
   if (typeof o === 'string' && o.match(/\${[^}]+}/))
     return o.replace(/\${([^}]+)}/g, function(m,g) { return self.vars[g]; })
   else if (typeof o === 'string' && o.match(/^\$/))
@@ -43,18 +43,28 @@ TestClient.prototype.interpolate = function(o) {
   else if (typeof o !== 'object' || o === null)
     return o
   for (key in o) {
-    o[this.interpolate(key)] = this.interpolate(o[key])
+    O[this.interpolate(key)] = this.interpolate(o[key])
   }
-  return o
+  return O
 }
 
-TestClient.prototype.startMeasurement = function(desc) {
-  return { desc: desc, start: moment() }
+TestClient.prototype.startMeasurement = function() {
+  return moment()
 }
 
-TestClient.prototype.stopMeasurement = function(o) {
-  var then = moment(o.start).valueOf(), now = moment().valueOf(), diff = now - then
-  fs.appendFile(this.performanceLog, '"'+o.desc+'",'+then+','+now+','+diff+'\n')
+TestClient.prototype.stopMeasurement = function() {
+  var args = Array.prototype.slice.call(arguments), start = args.shift()
+  var then = start.valueOf(), now = moment().valueOf(), diff = now - then
+  var line = then+','+now+','+diff
+  for (k in args) {
+    var arg = args[k]
+    if (typeof arg === 'number')
+      line += ','+arg
+    else
+      line += ',"'+arg+'"'
+  }
+  line += '\n'
+  fs.appendFile(this.performanceLog, line)
 }
 
 

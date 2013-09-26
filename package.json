@@ -26,7 +26,7 @@
     "extend": "1.1.x",
     "winston": "0.7.x",
     "sprintf": "0.1.x",
-    "rethinkdb": "1.8.x",
+    "rethinkdb": "1.9.x",
     "moment": "2.1.x",
     "argparser": "0.2.x",
     "q": "0.9.x"

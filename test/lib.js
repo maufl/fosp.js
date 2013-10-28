@@ -158,6 +158,21 @@ tests.list = function(u, o) {
   }
 }
 
+tests.event = function(n, o) {
+  return function() {
+    if (typeof o === 'object' && o !== null)
+      var options = this.interpolate(o)
+    else
+      var options = {}
+    var self = this, name = n, on = (this.vars[options.on] || this.vars.C)
+    on.con.on(name, function(notification) {
+      var time = self.startMeasurement()
+      self.stopMeasurement(time, notification.event, options.on || 'default')
+    })
+    return Q()
+  }
+}
+
 var singleRequest = function(request, uri, headers, body, options) {
   var o = {}
   if (options)

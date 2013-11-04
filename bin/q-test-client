@@ -11,7 +11,7 @@ var TestClient = function(file) {
   this.vars = {}
   this.file = path.resolve(file)
   this.commands = require(this.file)
-  this.performanceLog = file + '-' + moment().toISOString() + '.run'
+  this.performanceLog = fs.createWriteStream(file + '-' + moment().toISOString() + '.run')
   this.labels = []
   this.d = Q.defer()
 }
@@ -66,7 +66,7 @@ TestClient.prototype.stopMeasurement = function() {
       line += ',"'+arg+'"'
   }
   line += '\n'
-  fs.appendFile(this.performanceLog, line)
+  this.performanceLog.write(line)
 }
 
 

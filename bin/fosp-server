@@ -6,7 +6,11 @@ var basePath = path.join(path.dirname(fs.realpathSync(__filename)), '..')
 var fosp = require(path.join(basePath,'lib/fosp'));
 var RethinkDB = require(path.join(basePath, 'lib/server/rethinkdb-driver'));
 var L = require(path.join(basePath, 'lib/logger')).forFile(__filename);
+var perf = require(path.join(basePath, 'lib/performance'))
+var moment = require('moment')
+
 L.transports.console.level = 'info'
+
 var o = ap.vals("config").err(function(){ L.error("Invalid arguments suplied, only valid and required options is --config /path/to/config.conf"); process.exit(1); }).parse();
 var confFile = o.opt("config");
 if (! confFile) {
@@ -26,6 +30,10 @@ if (options.db.driver !== 'rethinkdb') {
   L.error('Config file contains unspecified db driver!')
   return
 }
+
+perf.setFile(fs.createWriteStream('/var/log/fosp/perf-log-' + moment().toISOString()))
+perf.console = false
+
 var dbDriver = new RethinkDB(options.db);
 
 var server = new fosp.Server(options, dbDriver);

@@ -43,8 +43,4 @@ L.info('Sever initialized');
 
 server.on('connect', function(con) {
   L.info('Recieved a new connection: ' + con.id);
-
-  con.on('close', function() {
-    L.info('Closing connection: ' + con.id);
-  });
 });

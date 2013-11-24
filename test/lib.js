@@ -86,7 +86,7 @@ tests.connect = function(h, options) {
       h = this.interpolate(h)
     var o = options || {}
     o = this.interpolate(o)
-    var host = h || 'localhost.localdomain', port = o.port || 1337, version = o.version || '0.1', d = Q.defer(), timeout = o.timeout || 5000, expect = o.expect || 'SUCCEDED'
+    var host = h || 'localhost.localdomain', port = o.port || 1337, version = o.version || '0.1', d = Q.defer(), timeout = o.timeout || 5000, expect = o.expect || 'SUCCEEDED'
     L('Creating new client')
     L('Naming connection ' + o.as)
     var self = this, c = new Client( { host: host, port: port } )
@@ -178,7 +178,7 @@ var singleRequest = function(request, uri, headers, body, options) {
   if (options)
     o = this.interpolate(options)
   var self = this, timeout = (o.timeout || 5000), on = (this.vars[o.on] || this.vars.C),
-      uri = (uri || null), headers = (headers || {}), body = (body || null), expect = o.expect || 'SUCCEDED', d = Q.defer()
+      uri = (uri || null), headers = (headers || {}), body = (body || null), expect = o.expect || 'SUCCEEDED', d = Q.defer()
   var t = setTimeout(function() { d.reject(request + ' timed out after ' + timeout + 'ms')}, timeout);
   var req = on.con.sendRequest(request, uri, headers, body)
   L('Sending new request ' + req.toString())

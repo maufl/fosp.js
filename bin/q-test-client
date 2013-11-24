@@ -75,7 +75,7 @@ if (require.main === module) {
     var val = process.argv[2]
     var test = new TestClient(val)
     test.run().then(function() {
-      console.log('Test ' + val + ' succeded')
+      console.log('Test ' + val + ' succeeded')
       process.exit(0)
     }).catch(function(err) {
       console.error(err)

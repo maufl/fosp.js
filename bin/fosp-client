@@ -25,13 +25,13 @@ var ExampleClient = function(configFile) {
       L.warn(resp.toString());
       L.warn('Exiting');
       exit(1);
-    }).on('succeded', function(resp) {
+    }).on('succeeded', function(resp) {
       L.info('Successfully negotiated connection!')
       L.info('Authenticating ...')
       self.client.con.sendAuthenticate({}, { name: self.config.user.name, password: self.config.user.password }).on('failed', function(resp) {
         L.warn('Authenticating failed, try again yourself (use "authenticate")');
         self.prompt()
-      }).on('succeded', function(resp) {
+      }).on('succeeded', function(resp) {
         L.info('Succesfully authenticated!');
         self.prompt()
       });
@@ -112,19 +112,19 @@ ExampleClient.prototype.cd = function(path) {
   }
 };
 
-ExampleClient.prototype.formatResponsePrompt = function(req, succeded, failed, timeout) {
+ExampleClient.prototype.formatResponsePrompt = function(req, succeeded, failed, timeout) {
   var self = this;
-  succeded = (typeof succeded === 'string') ? succeded : "Request %(request)s was successful: %(response_body)s";
+  succeeded = (typeof succeeded === 'string') ? succeeded : "Request %(request)s was successful: %(response_body)s";
   failed = (typeof failed === 'string') ? failed : "Request %(request)s failed: %(response_status)s :: %(response_body)s";
   timeout = (typeof timeout === 'string') ? timeout : "Request %(request)s timed out";
 
 
-  req.on('succeded', function(resp) {
+  req.on('succeeded', function(resp) {
     var vars = { request: req.request,
                  response_status: resp.status,
                  response_body: JSON.stringify(resp.body)
     }
-    console.log(sprintf(succeded, vars));
+    console.log(sprintf(succeeded, vars));
     self.prompt();
   });
   req.on('failed', function(resp) {
@@ -249,7 +249,7 @@ fospClient.on('read', function(params) {
   if (! this.paramsDefined(path, target) )
     return;
   self.tmpCd(path, function(dir) {
-    self.client.con.sendRead(dir).on('succeded', function(resp) {
+    self.client.con.sendRead(dir).on('succeeded', function(resp) {
       L.info('Successfully read')
       fs.writeFile(target, resp.body, { encoding: 'binary' }, function(err) {
         if (err)
@@ -277,7 +277,7 @@ fospClient.on('write', function(params) {
     return
   }
   self.tmpCd(path, function(dir) {
-    self.client.con.sendWrite(dir, {}, buffer).on('succeded', function(resp) {
+    self.client.con.sendWrite(dir, {}, buffer).on('succeeded', function(resp) {
       L.info('Successfully written')
       fospClient.prompt()
     }).on('failed', function(resp) {

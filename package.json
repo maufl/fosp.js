@@ -5,12 +5,12 @@
   "description": "Libraries that implement the FOSP & example client and server",
   "repository": {
     "type": "git",
-    "url": "http://bitbucket.org/maufl/fosp.git"
+    "url": "https://github.com/maufl/fosp.js.git"
   },
-  "homepage": "http://bitbucket.org/maufl/fosp.git",
+  "homepage": "https://github.com/maufl/fosp.js.git",
   "bugs": {
     "email": "Felix.Maurer@fsmi.uni-karlsruhe.de",
-    "url": "https://bitbucket.org/maufl/fosp/issues"
+    "url": "https://github.com/maufl/fosp.js/issues"
   },
   "bin": {
     "fosp-server": "./bin/fosp-server",
